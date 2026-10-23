@@ -1,0 +1,43 @@
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql://llm-chat:llm-chat@postgres:5432/llm-chat
+  CORS_ORIGINS: http://localhost:5173
+
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: llm-chat
+      POSTGRES_PASSWORD: llm-chat
+      POSTGRES_DB: llm-chat
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts:/scripts:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U llm-chat -d llm-chat"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+  migrate:
+    build: .
+    command: python scripts/migrate.py
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://llm-chat:llm-chat@postgres:5432/llm-chat
+  backend:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # migrate:
+      #   condition: service_completed_successfully  
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:
