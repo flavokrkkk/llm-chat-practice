@@ -1,4 +1,5 @@
 import asyncpg
+from app.core.exceptions import NotFoundError
 from app.schemas.chat import ChatId, ChatSchema, ChatWithMessagesSchema
 from app.schemas.user import UserId
 
@@ -12,6 +13,9 @@ class ChatRepository:
         row = await self.connection.fetchrow(
             "SELECT id, user_id, title, created_at FROM chats WHERE id = $1", chat_id
         )
+
+        if row is None:
+            raise NotFoundError("Chat not found")
 
         chat = ChatSchema.model_validate(row)
         return chat

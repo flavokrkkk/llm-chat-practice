@@ -1,4 +1,5 @@
 import asyncpg
+from app.core.exceptions import NotFoundError
 from app.schemas.user import UserSchema, TopUserStatsSchema, UserId
 from decimal import Decimal
 
@@ -13,6 +14,9 @@ class UserRepository:
             "SELECT id, email, balance, created_at FROM users WHERE id = $1", user_id
         )
 
+        if row is None:
+            raise NotFoundError("User not found")
+
         return UserSchema.model_validate(row)
 
     async def get_user_by_email(self, email: str):
@@ -20,6 +24,9 @@ class UserRepository:
             "SELECT id, email, balance, created_at from users WHERE lower(email) = $1",
             email.lower(),
         )
+
+        if raw is None:
+            raise NotFoundError("User not found")
 
         return UserSchema.model_validate(raw)
 
@@ -48,12 +55,18 @@ class UserRepository:
             "SELECT balance FROM users WHERE id = $1 FOR UPDATE", user_id
         )
 
+        if val is None:
+            raise NotFoundError("User not found")
+
         return val
 
     async def get_balance(self, user_id: UserId) -> Decimal:
         val = await self.connection.fetchval(
             "SELECT balance FROM users WHERE id = $1", user_id
         )
+
+        if val is None:
+            raise NotFoundError("User not found")
 
         return val
 

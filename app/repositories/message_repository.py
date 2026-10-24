@@ -1,5 +1,6 @@
 import asyncpg
 
+from app.core.exceptions import NotFoundError
 from app.schemas.message import MessageSchema, MessageRole
 from app.schemas.base import PaginationResponse, CursorPaginationResponse
 from app.schemas.chat import ChatId
@@ -136,5 +137,8 @@ class MessageRepository:
             )
 
             row = message
+
+        if row is None:
+            raise NotFoundError("Message not found")
 
         return MessageSchema.model_validate(row)

@@ -3,9 +3,10 @@ from app.repositories.transfer_repository import TransferRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserId
 from app.schemas.transfer import TransferSchema
+from app.core.exceptions import InsufficientFundsError
 from decimal import Decimal
 import asyncio
-from app.core.decorator import retry_on_serialization_error
+from app.core.decorator import retry_on_transient_db_error
 
 
 class TransferService:
@@ -22,7 +23,9 @@ class TransferService:
             balance = await self.user_repository.get_balance_for_update(from_user_id)
 
             if balance < amount:
-                raise ValueError(f"Недостаточно средств: {balance} < {amount}")
+                raise InsufficientFundsError(
+                    f"Недостаточно средств: {balance} < {amount}"
+                )
 
             await asyncio.sleep(0.05)
 
@@ -50,7 +53,7 @@ class TransferService:
             )
 
             if not success:
-                raise ValueError("Недостаточно средств")
+                raise InsufficientFundsError("Недостаточно средств")
 
             await self.user_repository.add_balance(to_user_id, amount)
 
@@ -58,7 +61,7 @@ class TransferService:
                 to_user_id, from_user_id, amount
             )
 
-    @retry_on_serialization_error(max_retries=15, delay=0.02)
+    @retry_on_transient_db_error(max_retries=15, delay=0.02)
     async def transfer_serializable_update(
         self, from_user_id: UserId, to_user_id: UserId, amount: Decimal
     ) -> TransferSchema:
@@ -66,7 +69,9 @@ class TransferService:
             balance = await self.user_repository.get_balance(from_user_id)
 
             if balance < amount:
-                raise ValueError(f"Недостаточно средств: {balance} < {amount}")
+                raise InsufficientFundsError(
+                    f"Недостаточно средств: {balance} < {amount}"
+                )
 
             await asyncio.sleep(0.05)
 
@@ -117,7 +122,7 @@ class TransferService:
 
             from_user_balance = await self.user_repository.get_balance(from_user_id)
             if from_user_balance < amount:
-                raise ValueError(
+                raise InsufficientFundsError(
                     f"Недостаточно средств: {from_user_balance} < {amount}"
                 )
 
