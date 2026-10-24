@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, TypeAdapter
+from pydantic import BaseModel, Field
 from enum import Enum
 from uuid import UUID
 from datetime import datetime

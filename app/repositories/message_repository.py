@@ -1,7 +1,11 @@
 import asyncpg
 
 from app.schemas.message import MessageSchema
+from app.schemas.base import PaginationResponse, CursorPaginationResponse
 from app.schemas.chat import ChatId
+from typing import Optional
+from datetime import datetime
+from uuid import UUID
 
 
 class MessageRepository:
@@ -27,3 +31,83 @@ class MessageRepository:
         messages = [MessageSchema.model_validate(x) for x in rows]
 
         return messages
+
+    async def get_chat_messages_offset(
+        self, chat_id: ChatId, limit: int, offset: int
+    ) -> PaginationResponse:
+        total = await self.connection.fetchval(
+            "SELECT COUNT(*) from messages WHERE chat_id = $1", chat_id
+        )
+
+        rows = await self.connection.fetch(
+            """
+            SELECT id, chat_id, role, content, idempotency_key, created_at
+            FROM messages
+            WHERE chat_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+            """,
+            chat_id,
+            limit,
+            offset,
+        )
+
+        return PaginationResponse(
+            items=[MessageSchema.model_validate(x) for x in rows],
+            total=total,
+            offset=offset,
+            limit=limit,
+        )
+
+    async def get_chat_messages_keyset(
+        self,
+        chat_id: ChatId,
+        limit: int,
+        cursor_id: Optional[UUID] = None,
+        cursor_created_at: Optional[datetime] = None,
+    ) -> CursorPaginationResponse:
+
+        base_query = """
+            SELECT id, chat_id, role, content, idempotency_key, created_at
+            FROM messages 
+            WHERE chat_id = $1
+        """
+
+        args = [chat_id]
+
+        if cursor_created_at is not None and cursor_id is not None:
+            args.append(cursor_created_at)
+            args.append(cursor_id)
+
+            args.append(limit)
+
+            final_query = f"""
+            {base_query}
+            AND (created_at, id) < ($2::timestamptz, $3::uuid)
+            ORDER BY created_at DESC, id DESC 
+            LIMIT $4
+            """
+
+        else:
+            args.append(limit)
+
+            final_query = f"""
+            {base_query}
+            ORDER BY created_at DESC, id DESC 
+            LIMIT $2
+            """
+
+        rows = await self.connection.fetch(final_query, *args)
+
+        items = [MessageSchema.model_validate(x) for x in rows]
+
+        next_created_at = None
+        next_id = None
+
+        if len(items) == limit:
+            next_created_at = items[-1].created_at
+            next_id = items[-1].id
+
+        return CursorPaginationResponse(
+            items=items, next_created_at=next_created_at, next_id=next_id, limit=limit
+        )
