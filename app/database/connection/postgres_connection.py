@@ -10,7 +10,7 @@ class Postgres:
 
     async def connect(self):
         self.pool = await asyncpg.create_pool(
-            self.database_url, min_size=1, max_size=10
+            self.database_url, min_size=10, max_size=60
         )
 
     async def disconnect(self):

@@ -1,11 +1,19 @@
 import asyncpg
-from app.schemas.user import UserSchema, TopUserStatsSchema
+from app.schemas.user import UserSchema, TopUserStatsSchema, UserId
+from decimal import Decimal
 
 
 class UserRepository:
 
     def __init__(self, connection: asyncpg.Connection):
         self.connection = connection
+
+    async def get_user_by_id(self, user_id: UserId) -> UserSchema:
+        row = await self.connection.fetchrow(
+            "SELECT id, email, balance, created_at FROM users WHERE id = $1", user_id
+        )
+
+        return UserSchema.model_validate(row)
 
     async def get_user_by_email(self, email: str):
         raw = await self.connection.fetchrow(
@@ -34,3 +42,45 @@ class UserRepository:
             """)
 
         return [TopUserStatsSchema.model_validate(dict(row)) for row in rows]
+
+    async def get_balance_for_update(self, user_id: UserId) -> Decimal:
+        val = await self.connection.fetchval(
+            "SELECT balance FROM users WHERE id = $1 FOR UPDATE", user_id
+        )
+
+        return val
+
+    async def get_balance(self, user_id: UserId) -> Decimal:
+        val = await self.connection.fetchval(
+            "SELECT balance FROM users WHERE id = $1", user_id
+        )
+
+        return val
+
+    async def deduct_balance(self, user_id: UserId, amount: Decimal):
+        return await self.connection.execute(
+            "UPDATE users SET balance = balance - $1 WHERE id = $2",
+            amount,
+            user_id,
+        )
+
+    async def add_balance(self, user_id: UserId, amount: Decimal):
+        return await self.connection.execute(
+            "UPDATE users SET balance = balance + $1 WHERE id = $2",
+            amount,
+            user_id,
+        )
+
+    async def deduct_balance_atomic(self, user_id: UserId, amount: Decimal) -> bool:
+        updated_id = await self.connection.fetchval(
+            """
+            UPDATE users 
+            SET balance = balance - $1 
+            WHERE id = $2 AND balance >= $1
+            RETURNING id;
+            """,
+            amount,
+            user_id,
+        )
+
+        return updated_id is not None
