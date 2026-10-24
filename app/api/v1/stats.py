@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from app.services.user_service import UserService
-from app.api.dependencies import get_user_service
+from app.api.dependencies.dependencies import get_user_service
 
 router = APIRouter()
 

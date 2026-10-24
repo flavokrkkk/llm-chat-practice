@@ -38,6 +38,10 @@ services:
       #   condition: service_completed_successfully  
     ports:
       - "8000:8000"
-
+  redis:
+    image: redis:7-alpine
+    container_name: redis-store
+    ports:
+      - "6379:6379"
 volumes:
   pgdata:

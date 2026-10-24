@@ -12,6 +12,10 @@ class Settings:
             "CORS_ORIGINS", "http://localhost:5173"
         ).split(",")
     )
+    redis_url: str = (
+        f"redis://{os.environ.get('REDIS_HOST', "redis")}:{os.environ.get('REDIS_PORT', "6379")}"
+    )
+    cache_ttl_seconds = 3600
 
 
 settings = Settings()

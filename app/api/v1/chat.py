@@ -3,8 +3,9 @@ from app.services.chat_service import ChatService
 from app.services.message_service import MessageService
 from app.schemas.chat import ChatId
 from app.schemas.message import MessageCreate
+from app.api.dependencies.rate_limiter import RateLimiter
 
-from app.api.dependencies import get_chat_service, get_message_service
+from app.api.dependencies.dependencies import get_chat_service, get_message_service
 from datetime import datetime
 from uuid import UUID
 
@@ -50,7 +51,10 @@ async def get_chat_messages_keyset(
     )
 
 
-@router.post("/{chat_id}/messages")
+@router.post(
+    "/{chat_id}/messages",
+    dependencies=[Depends(RateLimiter(limit=10, window_seconds=60))],
+)
 async def create_chat_message(
     chat_id: ChatId,
     message_dto: MessageCreate,

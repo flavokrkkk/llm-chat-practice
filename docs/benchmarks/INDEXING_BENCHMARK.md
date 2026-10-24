@@ -311,3 +311,43 @@ first_id, second_id = sorted([from_user_id, to_user_id]).
    →
    Видит 5000.00.
    Вывод: На уровне Repeatable Read транзакция изолирована моментальным снимком (MVCC Snapshot), созданным на момент первого чтения, и гарантирует консистентность на протяжении всей своей жизни.
+
+6. Идемпотентность API (Idempotency Key)
+   Бизнес-задача: Защита от дублирования сообщений при сетевых сбоях и повторных кликах (POST /chats/{id}/messages с заголовком Idempotency-Key).
+7. Архитектурное решение в СУБД:
+   Создан составной уникальный индекс:
+   CREATE UNIQUE INDEX idx_messages_chat_idempotency
+   ON messages (chat_id, idempotency_key);
+   Атомарная вставка с обработкой конфликтов на уровне ядра Postgres:
+   INSERT INTO messages (chat_id, role, content, idempotency_key)
+   VALUES ($1, $2, $3, $4)
+   ON CONFLICT (chat_id, idempotency_key) DO NOTHING
+   RETURNING id, chat_id, role, content, idempotency_key, created_at;
+   Если строка не вставилась (RETURNING вернул None), сервис выполняет fallback SELECT и возвращает клиенту уже созданную запись.
+8. Результаты конкурентного теста (scripts/message-idempotency-check.py):
+   Сценарий: 20 одновременных запросов с одинаковым ключом через asyncio.gather.
+   Результат:
+   Успешных ответов (200 OK): 20 из 20
+   Ошибок: 0
+   Создано физических записей в БД: строго 1 (ID: e02b0070-f8e3-4276-a2b8-5af47cacdbf8).
+   Почему проверка «сначала SELECT, потом INSERT» не работает (TOCTOU):
+   При параллельных запросах все конкурентные потоки одновременно выполнят SELECT, увидят отсутствие записи и одновременно попытаются сделать INSERT, что приведет либо к дублированию данных (если нет UNIQUE), либо к падению с UniqueViolationError у всех запросов, кроме первого. Только атомарный ON CONFLICT на уровне СУБД решает проблему гонки.
+
+9. Кэширование и Rate Limiting в Redis
+10. Rate Limiter (Алгоритм Fixed Window)
+    Реализация: Зависимость FastAPI (RateLimiter) с использованием атомарных команд Redis:
+    INCR rate_limit:messages:{user_id}
+    EXPIRE rate_limit:messages:{user_id} 60 (только при первом инкременте)
+
+Результаты тестирования:
+Запросы 1–10: 200 OK
+Запросы 11+: 429 Too Many Requests (срабатывание лимита). 2. Кэширование аналитики: Паттерн Cache-Aside
+Эндпоинт: GET /stats/top-users (тяжелый аналитический запрос с JOIN, GROUP BY и HAVING по 3M строк).
+Срок жизни кэша (TTL): 60 секунд.
+Замеры задержки (Latency):
+Состояние кэша Время ответа (Round Trip) Источник данных
+Cache Miss (Первый запрос) 325 ms PostgreSQL (диск/индексы)
+Cache Hit (Повторные запросы) 9 – 13 ms Redis (In-Memory RAM)
+Эффективность Ускорение в ~30 раз Нагрузка на СУБД снята
+
+Время окончания работы над проектом - 24.10.2026 - 23:20

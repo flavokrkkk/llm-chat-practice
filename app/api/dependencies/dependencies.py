@@ -5,6 +5,7 @@ from app.services.chat_service import ChatService
 from app.services.message_service import MessageService
 from app.services.user_service import UserService
 from app.services.transfer_service import TransferService
+from app.core.clients.redis_client import RedisClient, get_redis
 
 
 def get_chat_service(connection: asyncpg.Connection = Depends(database.get_connection)):
@@ -23,10 +24,11 @@ def get_message_service(
 
 def get_user_service(
     connection: asyncpg.Connection = Depends(database.get_connection),
+    redis_client: RedisClient = Depends(get_redis),
 ):
     """Функция для инъекции зависимости UserService"""
 
-    return UserService(connection)
+    return UserService(connection, redis_client)
 
 
 def get_transfer_service(
