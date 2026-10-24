@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
     balance: Decimal = Field(default=Decimal("0.00"), ge=0, decimal_places=2)
 
 
-class UserResponse(BaseSchema):
+class UserSchema(BaseSchema):
     id: UUID
     email: EmailStr
     balance: Decimal

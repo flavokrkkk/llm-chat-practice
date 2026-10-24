@@ -1,8 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter
 from enum import Enum
 from uuid import UUID
 from datetime import datetime
-from .base import BaseSchema
+from typing import NewType
+from .base import BaseSchema, BaseId
+
+MessageId = NewType("MessageId", BaseId)
 
 
 class MessageRole(str, Enum):
@@ -16,7 +19,7 @@ class MessageCreate(BaseModel):
     idempotency_key: str | None = Field(default=None, max_length=255)
 
 
-class MessageResponse(BaseSchema):
+class MessageSchema(BaseSchema):
     id: UUID
     chat_id: UUID
     role: MessageRole
