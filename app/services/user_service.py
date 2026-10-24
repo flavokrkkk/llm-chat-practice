@@ -1,6 +1,6 @@
 import asyncpg
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserSchema
+from app.schemas.user import UserSchema, TopUserStatsSchema
 
 
 class UserService:
@@ -9,3 +9,6 @@ class UserService:
 
     async def get_user_by_email(self, email: str) -> UserSchema:
         return await self.user_repository.get_user_by_email(email)
+
+    async def get_user_stats(self) -> list[TopUserStatsSchema]:
+        return await self.user_repository.get_user_stats()

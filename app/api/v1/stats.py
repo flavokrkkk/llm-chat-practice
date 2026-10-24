@@ -1,0 +1,10 @@
+from fastapi import APIRouter, Depends, Query
+from app.services.user_service import UserService
+from app.api.dependencies import get_user_service
+
+router = APIRouter()
+
+
+@router.get("/top-users")
+async def get_top_users(user_service: UserService = Depends(get_user_service)):
+    return await user_service.get_user_stats()

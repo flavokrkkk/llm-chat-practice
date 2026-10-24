@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Json
 from uuid import UUID
 from datetime import datetime
 from typing import NewType
 from .base import BaseSchema, BaseId
+
+from .message import MessageSchema
 
 ChatId = NewType("ChatId", BaseId)
 
@@ -16,3 +18,11 @@ class ChatSchema(BaseSchema):
     user_id: UUID
     title: str
     created_at: datetime
+
+
+class ChatWithMessagesSchema(BaseModel):
+    id: UUID
+    title: str
+    user_id: UUID
+    created_at: datetime
+    last_messages: Json[list[MessageSchema]]
