@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Header
 from app.services.chat_service import ChatService
 from app.services.message_service import MessageService
 from app.schemas.chat import ChatId
+from app.schemas.message import MessageCreate
+
 from app.api.dependencies import get_chat_service, get_message_service
 from datetime import datetime
 from uuid import UUID
@@ -45,4 +47,19 @@ async def get_chat_messages_keyset(
 ):
     return await message_service.get_chat_messages_keyset(
         chat_id, limit, cursor_id=cursor_id, cursor_created_at=cursor_created_at
+    )
+
+
+@router.post("/{chat_id}/messages")
+async def create_chat_message(
+    chat_id: ChatId,
+    message_dto: MessageCreate,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    message_service: MessageService = Depends(get_message_service),
+):
+    return await message_service.create_chat_message(
+        chat_id,
+        role=message_dto.role,
+        content=message_dto.content,
+        idempotency_key=idempotency_key,
     )

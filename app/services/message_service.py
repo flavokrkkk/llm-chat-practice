@@ -5,7 +5,7 @@ from typing import Optional
 from datetime import datetime
 
 from app.schemas.chat import ChatId
-from app.schemas.message import MessageSchema
+from app.schemas.message import MessageSchema, MessageRole
 from app.schemas.base import PaginationResponse
 
 
@@ -38,4 +38,11 @@ class MessageService:
             limit=limit,
             cursor_id=cursor_id,
             cursor_created_at=cursor_created_at,
+        )
+
+    async def create_chat_message(
+        self, chat_id: ChatId, role: MessageRole, content: str, idempotency_key: str
+    ):
+        return await self.message_repository.create_message(
+            chat_id, role, content, idempotency_key
         )

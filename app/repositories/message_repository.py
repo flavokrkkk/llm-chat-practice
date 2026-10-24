@@ -1,6 +1,6 @@
 import asyncpg
 
-from app.schemas.message import MessageSchema
+from app.schemas.message import MessageSchema, MessageRole
 from app.schemas.base import PaginationResponse, CursorPaginationResponse
 from app.schemas.chat import ChatId
 from typing import Optional
@@ -111,3 +111,30 @@ class MessageRepository:
         return CursorPaginationResponse(
             items=items, next_created_at=next_created_at, next_id=next_id, limit=limit
         )
+
+    async def create_message(
+        self, chatd_id: ChatId, role: MessageRole, content: str, idempotency_key: str
+    ):
+        row = await self.connection.fetchrow(
+            """
+            INSERT INTO messages (chat_id, role, content, idempotency_key)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (chat_id, idempotency_key) DO NOTHING
+            RETURNING id, chat_id, role, content, idempotency_key, created_at;
+            """,
+            chatd_id,
+            role,
+            content,
+            idempotency_key,
+        )
+
+        if row is None:
+            message = await self.connection.fetchrow(
+                "SELECT * FROM messages WHERE chat_id = $1 AND idempotency_key = $2",
+                chatd_id,
+                idempotency_key,
+            )
+
+            row = message
+
+        return MessageSchema.model_validate(row)

@@ -16,7 +16,6 @@ class MessageRole(str, Enum):
 class MessageCreate(BaseModel):
     role: MessageRole
     content: str = Field(..., min_length=1)
-    idempotency_key: str | None = Field(default=None, max_length=255)
 
 
 class MessageSchema(BaseSchema):
