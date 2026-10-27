@@ -35,9 +35,9 @@ def retry_on_transient_db_error(
                         )
                         raise
 
-                    sleep_time = delay * (backoff_factor ** (attempt - 1)) + random.uniform(
-                        0, delay
-                    )
+                    sleep_time = delay * (
+                        backoff_factor ** (attempt - 1)
+                    ) + random.uniform(0, delay)
                     logger.warning(
                         "Transient DB error on attempt %s/%s, retrying in %.2fs",
                         attempt,

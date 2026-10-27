@@ -20,7 +20,6 @@ async def run_migrations():
     lock_acquired = False
 
     try:
-
         print("Acquiring migration lock...")
 
         await conn.execute("SELECT pg_advisory_lock($1);", MIGRATION_LOCK_ID)
@@ -58,7 +57,6 @@ async def run_migrations():
                 sql_content = f.read()
 
             try:
-
                 async with conn.transaction():
                     await conn.execute(sql_content)
                     await conn.execute(

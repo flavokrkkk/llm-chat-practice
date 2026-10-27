@@ -38,7 +38,6 @@ async def send_transfer_b(client: httpx.AsyncClient):
 
 async def main():
     async with httpx.AsyncClient(trust_env=False, follow_redirects=True) as client:
-
         task1 = send_transfer_a(client)
         task2 = send_transfer_b(client)
 

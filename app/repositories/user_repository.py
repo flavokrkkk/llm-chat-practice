@@ -5,7 +5,6 @@ from decimal import Decimal
 
 
 class UserRepository:
-
     def __init__(self, connection: asyncpg.Connection):
         self.connection = connection
 

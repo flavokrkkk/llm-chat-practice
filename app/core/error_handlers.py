@@ -151,9 +151,7 @@ async def unique_violation_exception_handler(
     )
 
 
-async def unhandled_exception_handler(
-    request: Request, exc: Exception
-) -> JSONResponse:
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Fallback-обработчик: любая непредвиденная ошибка -> 500."""
 
     logger.exception("Unhandled exception: %s", exc)

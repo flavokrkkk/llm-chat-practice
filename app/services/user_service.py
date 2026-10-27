@@ -28,7 +28,8 @@ class UserService:
             # Кэш — оптимизация, при недоступности Redis не должны падать
             # основные сценарии: отчитываемся от кэш-ошибки и идем в БД.
             logger.warning(
-                "Cache get failed for key=%s, fallback to database", CACHE_USER_STATS_KEY
+                "Cache get failed for key=%s, fallback to database",
+                CACHE_USER_STATS_KEY,
             )
             cached_top_users = None
 

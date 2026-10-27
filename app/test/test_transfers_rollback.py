@@ -38,9 +38,9 @@ async def test_transfer_atomic_rollback_on_failure():
             "SELECT balance FROM users WHERE id = $1", user_id
         )
 
-        assert balance_after_crash == Decimal(
-            "1000.00"
-        ), f"Баланс изменился на {balance_after_crash}, откат транзакции не сработал!"
+        assert balance_after_crash == Decimal("1000.00"), (
+            f"Баланс изменился на {balance_after_crash}, откат транзакции не сработал!"
+        )
 
     finally:
         await conn.execute(

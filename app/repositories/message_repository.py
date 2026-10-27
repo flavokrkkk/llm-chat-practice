@@ -10,7 +10,6 @@ from uuid import UUID
 
 
 class MessageRepository:
-
     def __init__(self, connection: asyncpg.Connection):
         self.connection = connection
 
