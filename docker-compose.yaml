@@ -1,7 +1,7 @@
 x-backend-env: &backend-env
   DATABASE_URL: postgresql://llm-chat:llm-chat@postgres:5432/llm-chat
+  REDIS_URL: redis://redis:6379/0
   CORS_ORIGINS: http://localhost:5173
-
 
 services:
   postgres:
@@ -31,11 +31,14 @@ services:
       DATABASE_URL: postgresql://llm-chat:llm-chat@postgres:5432/llm-chat
   backend:
     build: .
+    environment: *backend-env
     depends_on:
       postgres:
         condition: service_healthy
-      # migrate:
-      #   condition: service_completed_successfully  
+      redis:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "8000:8000"
   redis:
