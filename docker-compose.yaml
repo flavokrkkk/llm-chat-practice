@@ -1,6 +1,10 @@
 x-backend-env: &backend-env
-  DATABASE_URL: postgresql://llm-chat:llm-chat@postgres:5432/llm-chat
-  REDIS_URL: redis://redis:6379/0
+  DB__NAME: llm-chat
+  DB__USER: llm-chat
+  DB__PASSWORD: llm-chat
+  DB__HOST: postgres
+  DB__PORT: 5432
+  REDIS__URL: redis://redis:6379/0
   CORS_ORIGINS: http://localhost:5173
 
 services:
@@ -22,13 +26,12 @@ services:
       retries: 10
   migrate:
     build: .
-    command: python scripts/migrate.py
+    command: alembic upgrade head
     depends_on:
       postgres:
         condition: service_healthy
     restart: "no"
-    environment:
-      DATABASE_URL: postgresql://llm-chat:llm-chat@postgres:5432/llm-chat
+    environment: *backend-env
   backend:
     build: .
     environment: *backend-env

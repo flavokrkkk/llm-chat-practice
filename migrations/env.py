@@ -1,15 +1,15 @@
 import asyncio
 from logging.config import fileConfig
 
-from app.infrastructure.config.config import settings
-from app.infrastructure.database.models.base import Base
-import app.infrastructure.database.models  # noqa: F401
-
+from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.schema import SchemaItem
 
-from alembic import context
+import app.infrastructure.database.models  # noqa: F401
+from app.infrastructure.config.config import settings
+from app.infrastructure.database.models.base import Base
 
 config = context.config
 
@@ -17,6 +17,22 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
+
+
+LANGGRAPH_TABLES = frozenset(
+    ("checkpoints", "checkpoint_writes", "checkpoint_blobs", "checkpoint_migrations")
+)
+
+
+def include_object(
+    _obj: SchemaItem,
+    name: str | None,
+    type_: str,
+    _reflected: bool,
+    _compare_to: SchemaItem | None,
+) -> bool:
+    return not (type_ == "table" and name in LANGGRAPH_TABLES)
+
 
 def run_migrations_offline() -> None:
     context.configure(
@@ -31,10 +47,11 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata, 
-        include_object=
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_object=include_object,
     )
-
     with context.begin_transaction():
         context.run_migrations()
 

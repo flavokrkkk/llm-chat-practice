@@ -1,12 +1,20 @@
+BEGIN;
 TRUNCATE users,
 chats,
 messages,
 transfers RESTART IDENTITY CASCADE;
-BEGIN;
 -- 1. ЗАПОЛНЕНИЕ ПОЛЬЗОВАТЕЛЕЙ
-INSERT INTO users (email, balance, created_at)
+INSERT INTO users (
+        email,
+        balance,
+        full_name,
+        password_hash,
+        created_at
+    )
 SELECT 'user_' || gs || '@' || (ARRAY ['gmail.com', 'yahoo.com', 'outlook.com']) [FLOOR(RANDOM() * 3 + 1)] AS email,
     ROUND((RANDOM() * 10000)::NUMERIC, 2) AS balance,
+    'User ' || gs AS full_name,
+    '$argon2id$v=19$m=65536,t=3,p=4$JtpHXhmX7naiQeNZ+BsbJw$jeNLu2OPXYqiS8Q8ETGp2w0GJQH6ucqSdEU7KJKrXCY' AS password_hash,
     NOW() - (gs || ' hours')::INTERVAL AS created_at
 FROM generate_series(1, 10000) AS gs;
 -- 2. ЗАПОЛНЕНИЕ ЧАТОВ (WITH жестко связан с INSERT)
