@@ -5,8 +5,8 @@ from fastapi import FastAPI
 
 from app.api.router import v1_router
 from app.core.clients.redis_client import redis_client
-from app.core.error_handlers import register_exception_handlers
-from app.database.connection.postgres_connection import database
+from app.infrastructure.database.connection.postgres_connection import database
+from app.infrastructure.errors.error_handlers import register_exception_handlers
 
 logging.basicConfig(
     level=logging.INFO,

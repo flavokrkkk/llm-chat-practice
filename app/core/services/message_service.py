@@ -3,11 +3,11 @@ from typing import Optional
 
 import asyncpg
 
-from app.repositories.chat_repository import ChatRepository
-from app.repositories.message_repository import MessageRepository
-from app.schemas.base import PaginationResponse
-from app.schemas.chat import ChatId
-from app.schemas.message import MessageRole, MessageSchema
+from app.core.repositories.chat_repository import ChatRepository
+from app.core.repositories.message_repository import MessageRepository
+from app.core.schemas.base import PaginationResponse
+from app.core.schemas.chat import ChatId
+from app.core.schemas.message import MessageRole, MessageSchema
 
 
 class MessageService:

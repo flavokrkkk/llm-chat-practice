@@ -5,7 +5,7 @@ from fastapi import Depends, Header
 from redis.exceptions import RedisError
 
 from app.core.clients.redis_client import RedisClient, get_redis
-from app.core.exceptions import RateLimitExceededError
+from app.infrastructure.errors.exceptions import RateLimitExceededError
 
 logger = logging.getLogger(__name__)
 

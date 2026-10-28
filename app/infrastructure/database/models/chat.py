@@ -4,12 +4,12 @@ from uuid import UUID
 from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database.models.base import Base, CreatedAtMixin, UUIDPkMixin
+from app.infrastructure.database.models.base import Base, CreatedAtMixin, UUIDPkMixin
 
 if TYPE_CHECKING:
-    from app.database.models.message import Message
-    from app.database.models.pending_action import PendingAction
-    from app.database.models.user import User
+    from app.infrastructure.database.models.message import Message
+    from app.infrastructure.database.models.pending_action import PendingAction
+    from app.infrastructure.database.models.user import User
 
 
 class Chat(UUIDPkMixin, CreatedAtMixin, Base):

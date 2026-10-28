@@ -3,15 +3,15 @@ from typing import Any
 
 from redis.asyncio import Redis
 
-from app.core.config import settings
+from app.infrastructure.config.config import settings
 
 
 class RedisClient:
-    def __init__(self, redis_url: str = settings.redis_url) -> None:
+    def __init__(self, redis_url: str = str(settings.redis.url)) -> None:
         self.redis = Redis.from_url(redis_url, decode_responses=True)
 
     async def set(
-        self, key: str, value: Any, ttl: int = settings.cache_ttl_seconds
+        self, key: str, value: Any, ttl: int = settings.redis.cache_ttl_seconds
     ) -> None:
         json_data = json.dumps(value, default=str)
         await self.redis.set(key, json_data, ex=ttl)
@@ -29,7 +29,7 @@ class RedisClient:
         await self.redis.close()
 
 
-redis_client = RedisClient(settings.redis_url)
+redis_client = RedisClient(str(settings.redis.url))
 
 
 def get_redis() -> RedisClient:

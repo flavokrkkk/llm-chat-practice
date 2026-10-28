@@ -4,10 +4,10 @@ from uuid import UUID
 
 import asyncpg
 
-from app.core.exceptions import NotFoundError
-from app.schemas.base import CursorPaginationResponse, PaginationResponse
-from app.schemas.chat import ChatId
-from app.schemas.message import MessageRole, MessageSchema
+from app.core.schemas.base import CursorPaginationResponse, PaginationResponse
+from app.core.schemas.chat import ChatId
+from app.core.schemas.message import MessageRole, MessageSchema
+from app.infrastructure.errors.exceptions import NotFoundError
 
 
 class MessageRepository:

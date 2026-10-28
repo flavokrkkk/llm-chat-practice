@@ -2,8 +2,8 @@ from decimal import Decimal
 
 import asyncpg
 
-from app.core.exceptions import NotFoundError
-from app.schemas.user import TopUserStatsSchema, UserId, UserSchema
+from app.core.schemas.user import TopUserStatsSchema, UserId, UserSchema
+from app.infrastructure.errors.exceptions import NotFoundError
 
 
 class UserRepository:

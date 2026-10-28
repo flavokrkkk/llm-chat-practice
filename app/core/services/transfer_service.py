@@ -4,11 +4,11 @@ from decimal import Decimal
 import asyncpg
 
 from app.core.decorator import retry_on_transient_db_error
-from app.core.exceptions import InsufficientFundsError
-from app.repositories.transfer_repository import TransferRepository
-from app.repositories.user_repository import UserRepository
-from app.schemas.transfer import TransferSchema
-from app.schemas.user import UserId
+from app.core.repositories.transfer_repository import TransferRepository
+from app.core.repositories.user_repository import UserRepository
+from app.core.schemas.transfer import TransferSchema
+from app.core.schemas.user import UserId
+from app.infrastructure.errors.exceptions import InsufficientFundsError
 
 
 class TransferService:

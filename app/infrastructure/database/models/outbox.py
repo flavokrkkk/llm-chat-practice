@@ -6,7 +6,7 @@ from sqlalchemy import BigInteger, DateTime, Identity, Index, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database.models.base import Base, CreatedAtMixin, str_enum
+from app.infrastructure.database.models.base import Base, CreatedAtMixin, str_enum
 
 
 class OutboxEventType(enum.StrEnum):

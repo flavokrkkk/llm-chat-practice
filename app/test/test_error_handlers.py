@@ -1,9 +1,8 @@
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.error_handlers import register_exception_handlers
-from app.core.exceptions import (
+from app.infrastructure.errors.error_handlers import register_exception_handlers
+from app.infrastructure.errors.exceptions import (
     InsufficientFundsError,
     NotFoundError,
     RateLimitExceededError,

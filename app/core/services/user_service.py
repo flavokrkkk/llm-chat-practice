@@ -4,9 +4,8 @@ import asyncpg
 from redis.exceptions import RedisError
 
 from app.core.clients.redis_client import RedisClient
-from app.core.config import settings
-from app.repositories.user_repository import UserRepository
-from app.schemas.user import TopUserStatsSchema, UserSchema
+from app.core.repositories.user_repository import UserRepository
+from app.core.schemas.user import TopUserStatsSchema, UserSchema
 
 CACHE_USER_STATS_KEY = "cache:top_users"
 TTL_SECONDS = 60

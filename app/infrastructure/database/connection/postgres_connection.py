@@ -2,7 +2,7 @@ from typing import AsyncGenerator
 
 import asyncpg
 
-from app.core.config import settings
+from app.infrastructure.config.config import settings
 
 
 class Postgres:
@@ -29,4 +29,4 @@ class Postgres:
             yield connection
 
 
-database = Postgres(settings.database_url)
+database = Postgres(settings.db.sqlalchemy_url)

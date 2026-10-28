@@ -1,8 +1,8 @@
 import asyncpg
 
-from app.repositories.chat_repository import ChatRepository
-from app.schemas.chat import ChatId, ChatSchema, ChatWithMessagesSchema
-from app.schemas.user import UserId
+from app.core.repositories.chat_repository import ChatRepository
+from app.core.schemas.chat import ChatId, ChatSchema, ChatWithMessagesSchema
+from app.core.schemas.user import UserId
 
 
 class ChatService:

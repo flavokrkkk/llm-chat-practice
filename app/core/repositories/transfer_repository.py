@@ -2,8 +2,8 @@ from decimal import Decimal
 
 import asyncpg
 
-from app.schemas.transfer import TransferSchema
-from app.schemas.user import UserId
+from app.core.schemas.transfer import TransferSchema
+from app.core.schemas.user import UserId
 
 
 class TransferRepository:

@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import CheckConstraint, Index, Numeric, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database.models.base import Base, CreatedAtMixin, UUIDPkMixin
+from app.infrastructure.database.models.base import Base, CreatedAtMixin, UUIDPkMixin
 
 if TYPE_CHECKING:
-    from app.database.models.chat import Chat
-    from app.database.models.pending_action import PendingAction
-    from app.database.models.refresh_token import RefreshToken
-    from app.database.models.transfer import Transfer
+    from app.infrastructure.database.models.chat import Chat
+    from app.infrastructure.database.models.pending_action import PendingAction
+    from app.infrastructure.database.models.refresh_token import RefreshToken
+    from app.infrastructure.database.models.transfer import Transfer
 
 
 class User(UUIDPkMixin, CreatedAtMixin, Base):

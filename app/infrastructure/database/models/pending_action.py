@@ -7,11 +7,16 @@ from sqlalchemy import DateTime, ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database.models.base import Base, CreatedAtMixin, UUIDPkMixin, str_enum
+from app.infrastructure.database.models.base import (
+    Base,
+    CreatedAtMixin,
+    UUIDPkMixin,
+    str_enum,
+)
 
 if TYPE_CHECKING:
-    from app.database.models.chat import Chat
-    from app.database.models.user import User
+    from app.infrastructure.database.models.chat import Chat
+    from app.infrastructure.database.models.user import User
 
 
 class PendingActionStatus(enum.StrEnum):

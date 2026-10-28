@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends, Header, Query
 
 from app.api.dependencies.dependencies import get_chat_service, get_message_service
 from app.api.dependencies.rate_limiter import RateLimiter
-from app.schemas.chat import ChatId
-from app.schemas.message import MessageCreate
-from app.services.chat_service import ChatService
-from app.services.message_service import MessageService
+from app.core.schemas.chat import ChatId
+from app.core.schemas.message import MessageCreate
+from app.core.services.chat_service import ChatService
+from app.core.services.message_service import MessageService
 
 router = APIRouter()
 
