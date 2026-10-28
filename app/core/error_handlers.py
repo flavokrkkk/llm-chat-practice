@@ -1,13 +1,13 @@
 import logging
 
-from fastapi import FastAPI, Request
-from fastapi.exceptions import HTTPException, RequestValidationError
-from fastapi.responses import JSONResponse
 from asyncpg import (
     DeadlockDetectedError,
     PostgresError,
     UniqueViolationError,
 )
+from fastapi import FastAPI, Request
+from fastapi.exceptions import HTTPException, RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.core.exceptions import AppException
 from app.schemas.error import ErrorDetail, ErrorResponse, ValidationErrorItem

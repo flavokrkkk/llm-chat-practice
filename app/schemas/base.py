@@ -1,8 +1,9 @@
-from pydantic import BaseModel, ConfigDict, model_validator, Field
-from uuid import UUID
-from typing import Any, TypeVar, Generic, Optional
 from datetime import datetime
+from typing import Any, Generic, Optional, TypeVar
+from uuid import UUID
+
 import asyncpg
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 BaseId = UUID
 T = TypeVar("T")

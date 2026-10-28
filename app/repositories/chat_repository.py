@@ -1,4 +1,5 @@
 import asyncpg
+
 from app.core.exceptions import NotFoundError
 from app.schemas.chat import ChatId, ChatSchema, ChatWithMessagesSchema
 from app.schemas.user import UserId

@@ -1,9 +1,11 @@
-from pydantic import BaseModel, EmailStr, Field
-from decimal import Decimal
-from uuid import UUID
 from datetime import datetime
+from decimal import Decimal
 from typing import NewType
-from .base import BaseSchema, BaseId
+from uuid import UUID
+
+from pydantic import BaseModel, EmailStr, Field
+
+from .base import BaseId, BaseSchema
 
 UserId = NewType("UserId", BaseId)
 

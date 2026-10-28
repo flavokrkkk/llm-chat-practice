@@ -2,9 +2,10 @@ import logging
 from uuid import UUID
 
 from fastapi import Depends, Header
+from redis.exceptions import RedisError
+
 from app.core.clients.redis_client import RedisClient, get_redis
 from app.core.exceptions import RateLimitExceededError
-from redis.exceptions import RedisError
 
 logger = logging.getLogger(__name__)
 

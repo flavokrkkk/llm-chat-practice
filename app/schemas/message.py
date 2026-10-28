@@ -1,9 +1,11 @@
-from pydantic import BaseModel, Field
-from enum import Enum
-from uuid import UUID
 from datetime import datetime
+from enum import Enum
 from typing import NewType
-from .base import BaseSchema, BaseId
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
+from .base import BaseId, BaseSchema
 
 MessageId = NewType("MessageId", BaseId)
 

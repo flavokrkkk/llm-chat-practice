@@ -1,11 +1,12 @@
 import asyncpg
 from fastapi import Depends
+
+from app.core.clients.redis_client import RedisClient, get_redis
 from app.database.connection.postgres_connection import database
 from app.services.chat_service import ChatService
 from app.services.message_service import MessageService
-from app.services.user_service import UserService
 from app.services.transfer_service import TransferService
-from app.core.clients.redis_client import RedisClient, get_redis
+from app.services.user_service import UserService
 
 
 def get_chat_service(connection: asyncpg.Connection = Depends(database.get_connection)):

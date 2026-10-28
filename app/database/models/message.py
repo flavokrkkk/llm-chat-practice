@@ -2,10 +2,18 @@ import enum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Enum, ForeignKey, Index, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship, text
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database.models.base import Base, CreatedAtMixin, UUIDPkMixin
+from app.database.models.base import Base, CreatedAtMixin, UUIDPkMixin, str_enum
 
 if TYPE_CHECKING:
     from app.database.models.chat import Chat
@@ -14,14 +22,15 @@ if TYPE_CHECKING:
 class MessageRole(enum.StrEnum):
     USER = "user"
     ASSISTANT = "assistant"
+    TOOL = "tool"
 
 
 class Message(UUIDPkMixin, CreatedAtMixin, Base):
     __tablename__ = "messages"
     __table_args__ = (
-        Index("ix_messages_chat_keyset", "chat_id", "created_at", "id"),
+        Index("ix_messages_chat_id_created_at_id", "chat_id", "created_at", "id"),
         Index(
-            "ix_messages_user_role",
+            "ix_messages_chat_id_created_at_user",
             "chat_id",
             "created_at",
             postgresql_where=text("role = 'user'"),
@@ -35,20 +44,19 @@ class Message(UUIDPkMixin, CreatedAtMixin, Base):
         UniqueConstraint(
             "chat_id", "idempotency_key", name="uq_messages_chat_idempotency"
         ),
+        CheckConstraint("tokens_in >= 0", name="tokens_in_non_negative"),
+        CheckConstraint("tokens_out >= 0", name="tokens_out_non_negative"),
+        CheckConstraint("latency_ms >= 0", name="latency_ms_non_negative"),
     )
 
     content: Mapped[str] = mapped_column(Text)
     chat_id: Mapped[UUID] = mapped_column(ForeignKey("chats.id", ondelete="CASCADE"))
     role: Mapped[MessageRole] = mapped_column(
-        Enum(
-            MessageRole,
-            name="role",
-            native_enum=False,
-            length=10,
-            create_constraint=True,
-            values_callable=lambda e: [m.value for m in e],
-        )
+        str_enum(MessageRole, name="role", length=10)
     )
-    idempotency_key: Mapped[str | None] = mapped_column(String(255), unique=True)
+    tokens_in: Mapped[int | None]
+    tokens_out: Mapped[int | None]
+    latency_ms: Mapped[int | None]
+    idempotency_key: Mapped[str | None] = mapped_column(String(255))
 
     chat: Mapped["Chat"] = relationship(back_populates="messages")

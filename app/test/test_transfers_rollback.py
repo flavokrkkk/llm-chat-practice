@@ -1,7 +1,8 @@
 import os
-import pytest
-import asyncpg
 from decimal import Decimal
+
+import asyncpg
+import pytest
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL", "postgresql://llm-chat:llm-chat@localhost:5433/llm-chat"

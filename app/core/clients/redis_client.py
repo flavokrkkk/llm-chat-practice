@@ -1,6 +1,8 @@
 import json
 from typing import Any
+
 from redis.asyncio import Redis
+
 from app.core.config import settings
 
 

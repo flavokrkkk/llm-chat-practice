@@ -1,12 +1,13 @@
-import asyncpg
-from app.repositories.message_repository import MessageRepository
-from app.repositories.chat_repository import ChatRepository
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
-from app.schemas.chat import ChatId
-from app.schemas.message import MessageSchema, MessageRole
+import asyncpg
+
+from app.repositories.chat_repository import ChatRepository
+from app.repositories.message_repository import MessageRepository
 from app.schemas.base import PaginationResponse
+from app.schemas.chat import ChatId
+from app.schemas.message import MessageRole, MessageSchema
 
 
 class MessageService:

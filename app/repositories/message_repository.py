@@ -1,12 +1,13 @@
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
 import asyncpg
 
 from app.core.exceptions import NotFoundError
-from app.schemas.message import MessageSchema, MessageRole
-from app.schemas.base import PaginationResponse, CursorPaginationResponse
+from app.schemas.base import CursorPaginationResponse, PaginationResponse
 from app.schemas.chat import ChatId
-from typing import Optional
-from datetime import datetime
-from uuid import UUID
+from app.schemas.message import MessageRole, MessageSchema
 
 
 class MessageRepository:

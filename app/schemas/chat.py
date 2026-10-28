@@ -1,9 +1,10 @@
-from pydantic import BaseModel, Field, Json
-from uuid import UUID
 from datetime import datetime
 from typing import NewType
-from .base import BaseSchema, BaseId
+from uuid import UUID
 
+from pydantic import BaseModel, Field, Json
+
+from .base import BaseId, BaseSchema
 from .message import MessageSchema
 
 ChatId = NewType("ChatId", BaseId)

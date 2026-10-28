@@ -1,4 +1,5 @@
 import asyncpg
+
 from app.repositories.chat_repository import ChatRepository
 from app.schemas.chat import ChatId, ChatSchema, ChatWithMessagesSchema
 from app.schemas.user import UserId

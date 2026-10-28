@@ -1,7 +1,8 @@
+import enum
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, MetaData, func, text
+from sqlalchemy import DateTime, Enum, MetaData, func, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -28,7 +29,22 @@ class TimestampMixin(CreatedAtMixin):
     )
 
 
-class Base(DeclarativeBase, UUIDPkMixin):
+def _enum_values(enum_cls: type[enum.StrEnum]) -> list[str]:
+    return [m.value for m in enum_cls]
+
+
+def str_enum(enum_cls: type[enum.StrEnum], *, name: str, length: int) -> Enum:
+    return Enum(
+        enum_cls,
+        name=name,
+        length=length,
+        native_enum=False,
+        create_constraint=True,
+        values_callable=_enum_values,
+    )
+
+
+class Base(DeclarativeBase):
     metadata = MetaData(
         naming_convention={
             "ix": "ix_%(column_0_label)s",

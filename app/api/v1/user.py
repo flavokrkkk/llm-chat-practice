@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Query
-from app.services.user_service import UserService
-from app.services.chat_service import ChatService
-from app.api.dependencies.dependencies import get_user_service, get_chat_service
 from pydantic import EmailStr
+
+from app.api.dependencies.dependencies import get_chat_service, get_user_service
 from app.schemas.user import UserId
+from app.services.chat_service import ChatService
+from app.services.user_service import UserService
 
 router = APIRouter()
 

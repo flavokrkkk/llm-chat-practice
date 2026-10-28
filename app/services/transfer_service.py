@@ -1,12 +1,14 @@
+import asyncio
+from decimal import Decimal
+
 import asyncpg
+
+from app.core.decorator import retry_on_transient_db_error
+from app.core.exceptions import InsufficientFundsError
 from app.repositories.transfer_repository import TransferRepository
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserId
 from app.schemas.transfer import TransferSchema
-from app.core.exceptions import InsufficientFundsError
-from decimal import Decimal
-import asyncio
-from app.core.decorator import retry_on_transient_db_error
+from app.schemas.user import UserId
 
 
 class TransferService:
