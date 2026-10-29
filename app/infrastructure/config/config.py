@@ -21,6 +21,10 @@ class DatabaseConfig(BaseModel):
     password: str
     host: str
     port: int
+    pool_size: int = 5
+    max_overflow: int = 10
+    pool_pre_ping: bool = True
+    echo: bool = False
 
     def _build_url(self, driver: str) -> URL:
         return URL.create(

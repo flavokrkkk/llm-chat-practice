@@ -1,32 +1,32 @@
-from typing import AsyncGenerator
-
-import asyncpg
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.infrastructure.config.config import settings
 
 
-class Postgres:
-    def __init__(self, database_url: str):
-        self.database_url = database_url
-        self.pool: asyncpg.Pool | None = None
+class DatabaseConnection:
+    _engine = create_async_engine(
+        url=settings.db.sqlalchemy_url,
+        pool_size=settings.db.pool_size,
+        pool_pre_ping=settings.db.pool_pre_ping,
+        max_overflow=settings.db.max_overflow,
+        echo=settings.db.echo,
+    )
 
-    async def connect(self):
-        self.pool = await asyncpg.create_pool(
-            self.database_url, min_size=10, max_size=60
-        )
+    @property
+    async def session_factory(self) -> AsyncSession:
+        return async_sessionmaker(bind=self._engine, expire_on_commit=False)
 
-    async def disconnect(self):
-        if self.pool:
-            await self.pool.close()
+    async def session_scope(self):
+        session = await self.session_factory
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
-    async def get_connection(self) -> AsyncGenerator[asyncpg.Connection, None]:
-        if self.pool is None:
-            raise RuntimeError(
-                "Database pool is not initialized. Did you forget to call connect()?"
-            )
-
-        async with self.pool.acquire() as connection:
-            yield connection
-
-
-database = Postgres(settings.db.sqlalchemy_url)
+    async def get_session(self):
+        async with self.session_scope() as session:
+            yield session
