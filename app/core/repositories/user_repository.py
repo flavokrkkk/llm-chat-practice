@@ -1,100 +1,114 @@
+from datetime import timedelta
 from decimal import Decimal
 
-import asyncpg
+from sqlalchemy import func, select, update
 
 from app.core.schemas.user import TopUserStatsSchema, UserId, UserSchema
+from app.infrastructure.database.models.chat import Chat
+from app.infrastructure.database.models.message import Message
+from app.infrastructure.database.models.user import User
 from app.infrastructure.errors.exceptions import NotFoundError
 
+from .base_repository import SqlAlchemyRepository
 
-class UserRepository:
-    def __init__(self, connection: asyncpg.Connection):
-        self.connection = connection
 
+class UserRepository(SqlAlchemyRepository):
     async def get_user_by_id(self, user_id: UserId) -> UserSchema:
-        row = await self.connection.fetchrow(
-            "SELECT id, email, balance, created_at FROM users WHERE id = $1", user_id
-        )
 
-        if row is None:
+        result = await self.session.get(User, user_id)
+
+        if result is None:
             raise NotFoundError("User not found")
 
-        return UserSchema.model_validate(row)
+        return UserSchema.model_validate(result)
 
-    async def get_user_by_email(self, email: str):
-        raw = await self.connection.fetchrow(
-            "SELECT id, email, balance, created_at from users WHERE lower(email) = $1",
-            email.lower(),
-        )
+    async def get_user_by_email(self, email: str) -> UserSchema:
+        query = select(User).where(func.lower(User.email) == email.lower())
 
-        if raw is None:
+        result = await self.session.scalar(query)
+
+        if result is None:
             raise NotFoundError("User not found")
 
-        return UserSchema.model_validate(raw)
+        return UserSchema.model_validate(result)
 
     async def get_user_stats(self) -> list[TopUserStatsSchema]:
-        rows = await self.connection.fetch(""" 
-            SELECT
-                u.id AS user_id,
-                u.email,
-                u.balance,
-                u.created_at,
-                COUNT(m.id) AS messages_count
-            FROM users u 
-            INNER JOIN chats c ON c.user_id = u.id
-            INNER JOIN messages m ON m.chat_id = c.id
-            WHERE m.created_at >= NOW() - INTERVAL '7 days'
-            GROUP BY u.id
-            HAVING COUNT(m.id) > 0
-            ORDER BY messages_count DESC
-            LIMIT 10;
-            """)
+        messages_count = func.count(Message.id).label("messages_count")
 
-        return [TopUserStatsSchema.model_validate(dict(row)) for row in rows]
+        query = (
+            select(
+                User.id.label("user_id"),
+                User.email,
+                User.balance,
+                User.created_at,
+                messages_count,
+            )
+            .join(Chat, Chat.user_id == User.id)
+            .join(Message, Message.chat_id == Chat.id)
+            .where(Message.created_at >= func.now() - timedelta(days=7))
+            .group_by(User.id)
+            .order_by(messages_count.desc())
+            .limit(10)
+        )
+
+        result = await self.session.execute(query)
+
+        return [TopUserStatsSchema.model_validate(row) for row in result.mappings()]
 
     async def get_balance_for_update(self, user_id: UserId) -> Decimal:
-        val = await self.connection.fetchval(
-            "SELECT balance FROM users WHERE id = $1 FOR UPDATE", user_id
-        )
+        query = select(User.balance).where(User.id == user_id).with_for_update()
 
-        if val is None:
+        result = await self.session.scalar(query)
+
+        if result is None:
             raise NotFoundError("User not found")
 
-        return val
+        return result
 
     async def get_balance(self, user_id: UserId) -> Decimal:
-        val = await self.connection.fetchval(
-            "SELECT balance FROM users WHERE id = $1", user_id
-        )
+        query = select(User.balance).where(User.id == user_id)
 
-        if val is None:
+        result = await self.session.scalar(query)
+
+        if result is None:
             raise NotFoundError("User not found")
 
-        return val
+        return result
 
-    async def deduct_balance(self, user_id: UserId, amount: Decimal):
-        return await self.connection.execute(
-            "UPDATE users SET balance = balance - $1 WHERE id = $2",
-            amount,
-            user_id,
+    async def deduct_balance(self, user_id: UserId, amount: Decimal) -> None:
+        query = (
+            update(User)
+            .where(User.id == user_id)
+            .values(balance=User.balance - amount)
+            .returning(User.id)
         )
 
-    async def add_balance(self, user_id: UserId, amount: Decimal):
-        return await self.connection.execute(
-            "UPDATE users SET balance = balance + $1 WHERE id = $2",
-            amount,
-            user_id,
+        updated_id = await self.session.scalar(query)
+
+        if updated_id is None:
+            raise NotFoundError("User not found")
+
+    async def add_balance(self, user_id: UserId, amount: Decimal) -> None:
+        query = (
+            update(User)
+            .where(User.id == user_id)
+            .values(balance=User.balance + amount)
+            .returning(User.id)
         )
+        updated_id = await self.session.scalar(query)
+
+        if updated_id is None:
+            raise NotFoundError("User not found")
 
     async def deduct_balance_atomic(self, user_id: UserId, amount: Decimal) -> bool:
-        updated_id = await self.connection.fetchval(
-            """
-            UPDATE users 
-            SET balance = balance - $1 
-            WHERE id = $2 AND balance >= $1
-            RETURNING id;
-            """,
-            amount,
-            user_id,
+        query = (
+            update(User)
+            .where(User.id == user_id)
+            .where(User.balance >= amount)
+            .values(balance=User.balance - amount)
+            .returning(User.id)
         )
+
+        updated_id = await self.session.scalar(query)
 
         return updated_id is not None

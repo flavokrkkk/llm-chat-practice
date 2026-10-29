@@ -1,40 +1,55 @@
-import asyncpg
-from fastapi import Depends
+from collections.abc import AsyncIterator
+from typing import Annotated
 
-from app.core.clients.redis_client import RedisClient, get_redis
+from fastapi import Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.services.chat_service import ChatService
 from app.core.services.message_service import MessageService
 from app.core.services.transfer_service import TransferService
 from app.core.services.user_service import UserService
-from app.infrastructure.database.connection.postgres_connection import database
+from app.infrastructure.redis.cache import RedisCache
 
 
-def get_chat_service(connection: asyncpg.Connection = Depends(database.get_connection)):
+async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
+    async with request.app.state.db_connection.session_factory() as session:
+        yield session
+
+
+def get_cache(request: Request) -> RedisCache:
+    return request.app.state.cache
+
+
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
+CacheDep = Annotated[RedisCache, Depends(get_cache)]
+
+
+def get_chat_service(session: SessionDep) -> ChatService:
     """Функция для инъекции зависимости ChatService"""
 
-    return ChatService(connection)
+    return ChatService(session)
 
 
 def get_message_service(
-    connection: asyncpg.Connection = Depends(database.get_connection),
-):
+    session: SessionDep,
+) -> MessageService:
     """Функция для инъекции зависимости MessageService"""
 
-    return MessageService(connection)
+    return MessageService(session)
 
 
 def get_user_service(
-    connection: asyncpg.Connection = Depends(database.get_connection),
-    redis_client: RedisClient = Depends(get_redis),
-):
+    session: SessionDep,
+    cache: CacheDep,
+) -> UserService:
     """Функция для инъекции зависимости UserService"""
 
-    return UserService(connection, redis_client)
+    return UserService(session, cache)
 
 
 def get_transfer_service(
-    connection: asyncpg.Connection = Depends(database.get_connection),
-):
+    session: SessionDep,
+) -> TransferService:
     """Функция для инъекции зависимости TransferService"""
 
-    return TransferService(connection)
+    return TransferService(session)
