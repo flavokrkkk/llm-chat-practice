@@ -58,4 +58,4 @@ class Message(UUIDPkMixin, CreatedAtMixin, Base):
     latency_ms: Mapped[int | None]
     idempotency_key: Mapped[str | None] = mapped_column(String(255))
 
-    chat: Mapped["Chat"] = relationship(back_populates="messages")
+    chat: Mapped["Chat"] = relationship(back_populates="messages", lazy="raise")

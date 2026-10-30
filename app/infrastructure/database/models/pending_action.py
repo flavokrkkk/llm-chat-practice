@@ -52,5 +52,8 @@ class PendingAction(UUIDPkMixin, CreatedAtMixin, Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    chat: Mapped["Chat"] = relationship(back_populates="pending_actions")
-    user: Mapped["User"] = relationship(back_populates="pending_actions")
+    chat: Mapped["Chat"] = relationship(
+        back_populates="pending_actions",
+        lazy="raise",
+    )
+    user: Mapped["User"] = relationship(back_populates="pending_actions", lazy="raise")

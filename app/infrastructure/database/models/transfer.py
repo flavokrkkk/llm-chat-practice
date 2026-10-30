@@ -39,8 +39,12 @@ class Transfer(UUIDPkMixin, CreatedAtMixin, Base):
     idempotency_key: Mapped[str] = mapped_column(String(255), unique=True)
 
     from_user: Mapped["User"] = relationship(
-        foreign_keys=[from_user_id], back_populates="sent_transfers"
+        foreign_keys=[from_user_id],
+        back_populates="sent_transfers",
+        lazy="raise",
     )
     to_user: Mapped["User"] = relationship(
-        foreign_keys=[to_user_id], back_populates="received_transfers"
+        foreign_keys=[to_user_id],
+        back_populates="received_transfers",
+        lazy="raise",
     )

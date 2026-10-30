@@ -33,6 +33,7 @@ class User(UUIDPkMixin, CreatedAtMixin, Base):
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,
+        lazy="raise",
     )
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         back_populates="user",

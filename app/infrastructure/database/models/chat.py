@@ -25,6 +25,7 @@ class Chat(UUIDPkMixin, CreatedAtMixin, Base):
         back_populates="chat",
         cascade="all, delete-orphan",
         passive_deletes=True,
+        lazy="raise",
     )
     pending_actions: Mapped[list["PendingAction"]] = relationship(
         back_populates="chat",

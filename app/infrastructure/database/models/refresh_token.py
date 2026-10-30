@@ -25,4 +25,7 @@ class RefreshToken(UUIDPkMixin, CreatedAtMixin, Base):
         ForeignKey("refresh_tokens.id", ondelete="SET NULL"), index=True
     )
 
-    user: Mapped["User"] = relationship(back_populates="refresh_tokens")
+    user: Mapped["User"] = relationship(
+        back_populates="refresh_tokens",
+        lazy="raise",
+    )
