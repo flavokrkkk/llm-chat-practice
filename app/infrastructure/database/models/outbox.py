@@ -1,4 +1,3 @@
-import enum
 from datetime import datetime
 from typing import Any
 
@@ -7,10 +6,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.database.models.base import Base, CreatedAtMixin, str_enum
-
-
-class OutboxEventType(enum.StrEnum):
-    TRANSFER_COMPLETED = "transfer.completed"
+from app.utils.enums import OutboxEventType
 
 
 class Outbox(CreatedAtMixin, Base):

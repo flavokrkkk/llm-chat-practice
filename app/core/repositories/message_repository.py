@@ -2,56 +2,53 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-import asyncpg
+from sqlalchemy import func, select, tuple_
+from sqlalchemy.dialects.postgresql import insert
 
 from app.core.schemas.base import CursorPaginationResponse, PaginationResponse
 from app.core.schemas.chat import ChatId
 from app.core.schemas.message import MessageRole, MessageSchema
+from app.infrastructure.database.models import Message
 from app.infrastructure.errors.exceptions import NotFoundError
 
+from .base_repository import SqlAlchemyRepository
 
-class MessageRepository:
-    def __init__(self, connection: asyncpg.Connection):
-        self.connection = connection
 
+class MessageRepository(SqlAlchemyRepository):
     async def get_chat_messages(
         self, chat_id: ChatId, limit: int
     ) -> list[MessageSchema]:
-        rows = await self.connection.fetch(
-            """ 
-            SELECT id, chat_id, role, content, idempotency_key, created_at
-            FROM messages
-            WHERE chat_id = $1
-            ORDER BY created_at DESC
-            LIMIT $2
-            """,
-            chat_id,
-            limit,
+
+        query = (
+            select(Message)
+            .where(Message.chat_id == chat_id)
+            .order_by(Message.created_at.desc(), Message.id.desc())
+            .limit(limit)
         )
 
-        messages = [MessageSchema.model_validate(x) for x in rows]
+        result = await self.session.scalars(query)
+
+        messages = [MessageSchema.model_validate(x) for x in result]
 
         return messages
 
     async def get_chat_messages_offset(
         self, chat_id: ChatId, limit: int, offset: int
     ) -> PaginationResponse:
-        total = await self.connection.fetchval(
-            "SELECT COUNT(*) from messages WHERE chat_id = $1", chat_id
+
+        total_query = select(func.count(Message.id)).where(Message.chat_id == chat_id)
+
+        total = (await self.session.execute(total_query)).scalar_one()
+
+        query = (
+            select(Message)
+            .where(Message.chat_id == chat_id)
+            .order_by(Message.created_at.desc(), Message.id.desc())
+            .limit(limit)
+            .offset(offset)
         )
 
-        rows = await self.connection.fetch(
-            """
-            SELECT id, chat_id, role, content, idempotency_key, created_at
-            FROM messages
-            WHERE chat_id = $1
-            ORDER BY created_at DESC
-            LIMIT $2 OFFSET $3
-            """,
-            chat_id,
-            limit,
-            offset,
-        )
+        rows = await self.session.scalars(query)
 
         return PaginationResponse(
             items=[MessageSchema.model_validate(x) for x in rows],
@@ -68,44 +65,29 @@ class MessageRepository:
         cursor_created_at: Optional[datetime] = None,
     ) -> CursorPaginationResponse:
 
-        base_query = """
-            SELECT id, chat_id, role, content, idempotency_key, created_at
-            FROM messages 
-            WHERE chat_id = $1
-        """
-
-        args = [chat_id]
+        final_query = (
+            select(Message)
+            .where(Message.chat_id == chat_id)
+            .order_by(Message.created_at.desc(), Message.id.desc())
+            .limit(limit + 1)
+        )
 
         if cursor_created_at is not None and cursor_id is not None:
-            args.append(cursor_created_at)
-            args.append(cursor_id)
+            final_query = final_query.where(
+                tuple_(Message.created_at, Message.id)
+                < tuple_(cursor_created_at, cursor_id)
+            )
 
-            args.append(limit)
+        rows = (await self.session.scalars(final_query)).all()
 
-            final_query = f"""
-            {base_query}
-            AND (created_at, id) < ($2::timestamptz, $3::uuid)
-            ORDER BY created_at DESC, id DESC 
-            LIMIT $4
-            """
+        has_more = len(rows) > limit
 
-        else:
-            args.append(limit)
-
-            final_query = f"""
-            {base_query}
-            ORDER BY created_at DESC, id DESC 
-            LIMIT $2
-            """
-
-        rows = await self.connection.fetch(final_query, *args)
-
-        items = [MessageSchema.model_validate(x) for x in rows]
+        items = [MessageSchema.model_validate(x) for x in rows[:limit]]
 
         next_created_at = None
         next_id = None
 
-        if len(items) == limit:
+        if has_more:
             next_created_at = items[-1].created_at
             next_id = items[-1].id
 
@@ -114,27 +96,35 @@ class MessageRepository:
         )
 
     async def create_message(
-        self, chatd_id: ChatId, role: MessageRole, content: str, idempotency_key: str
-    ):
-        row = await self.connection.fetchrow(
-            """
-            INSERT INTO messages (chat_id, role, content, idempotency_key)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (chat_id, idempotency_key) DO NOTHING
-            RETURNING id, chat_id, role, content, idempotency_key, created_at;
-            """,
-            chatd_id,
-            role,
-            content,
-            idempotency_key,
+        self,
+        chat_id: ChatId,
+        role: MessageRole,
+        content: str,
+        idempotency_key: str | None,
+    ) -> MessageSchema:
+
+        query = (
+            insert(Message)
+            .values(
+                chat_id=chat_id,
+                role=role,
+                content=content,
+                idempotency_key=idempotency_key,
+            )
+            .on_conflict_do_nothing(
+                index_elements=[Message.chat_id, Message.idempotency_key]
+            )
+            .returning(Message)
         )
 
+        row = await self.session.scalar(query)
+
         if row is None:
-            message = await self.connection.fetchrow(
-                "SELECT * FROM messages WHERE chat_id = $1 AND idempotency_key = $2",
-                chatd_id,
-                idempotency_key,
+            conflict_query = select(Message).where(
+                Message.chat_id == chat_id, Message.idempotency_key == idempotency_key
             )
+
+            message = await self.session.scalar(conflict_query)
 
             row = message
 

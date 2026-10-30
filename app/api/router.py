@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter
 
 from app.api.v1.chat import router as chat_router
 from app.api.v1.stats import router as stats_router

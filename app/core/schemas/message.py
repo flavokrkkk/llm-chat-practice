@@ -1,18 +1,14 @@
 from datetime import datetime
-from enum import Enum
 from typing import NewType
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.utils.enums import MessageRole
+
 from .base import BaseId, BaseSchema
 
 MessageId = NewType("MessageId", BaseId)
-
-
-class MessageRole(str, Enum):
-    USER = "user"
-    ASSISTANT = "assistant"
 
 
 class MessageCreate(BaseModel):

@@ -1,4 +1,3 @@
-import enum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -19,15 +18,10 @@ from app.infrastructure.database.models.base import (
     UUIDPkMixin,
     str_enum,
 )
+from app.utils.enums import MessageRole
 
 if TYPE_CHECKING:
     from app.infrastructure.database.models.chat import Chat
-
-
-class MessageRole(enum.StrEnum):
-    USER = "user"
-    ASSISTANT = "assistant"
-    TOOL = "tool"
 
 
 class Message(UUIDPkMixin, CreatedAtMixin, Base):

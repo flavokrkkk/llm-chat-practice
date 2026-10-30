@@ -1,4 +1,3 @@
-import enum
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
@@ -13,22 +12,11 @@ from app.infrastructure.database.models.base import (
     UUIDPkMixin,
     str_enum,
 )
+from app.utils.enums import PendingActionKind, PendingActionStatus
 
 if TYPE_CHECKING:
     from app.infrastructure.database.models.chat import Chat
     from app.infrastructure.database.models.user import User
-
-
-class PendingActionStatus(enum.StrEnum):
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    EXPIRED = "expired"
-    DONE = "done"
-
-
-class PendingActionKind(enum.StrEnum):
-    TRANSFER = "transfer"
 
 
 class PendingAction(UUIDPkMixin, CreatedAtMixin, Base):
