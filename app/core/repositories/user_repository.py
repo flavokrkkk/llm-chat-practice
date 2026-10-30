@@ -56,7 +56,11 @@ class UserRepository(SqlAlchemyRepository):
         return [TopUserStatsSchema.model_validate(row) for row in result.mappings()]
 
     async def get_balance_for_update(self, user_id: UserId) -> Decimal:
-        query = select(User.balance).where(User.id == user_id).with_for_update()
+        query = (
+            select(User.balance)
+            .where(User.id == user_id)
+            .with_for_update(key_share=True)
+        )
 
         result = await self.session.scalar(query)
 

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import NewType
 from uuid import UUID
 
-from pydantic import BaseModel, Field, Json
+from pydantic import BaseModel, Field
 
 from .base import BaseId, BaseSchema
 from .message import MessageSchema
@@ -26,4 +26,4 @@ class ChatWithMessagesSchema(BaseModel):
     title: str
     user_id: UUID
     created_at: datetime
-    last_messages: Json[list[MessageSchema]]
+    last_messages: list[MessageSchema]

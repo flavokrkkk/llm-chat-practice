@@ -1,15 +1,16 @@
 import asyncio
+from uuid import uuid4
 
 import httpx
 
 API_URL = "http://127.0.0.1:8080/api/v1"
 
 
-USER_A_ID = "0001fdf8-b2c9-43a9-9c3a-8c5816ea127e"  # Отправитель
-USER_B_ID = "00066c83-148e-4ef4-a182-09cabd187f8d"  # Получатель
+USER_A_ID = "000d0dd1-5f44-4016-bee1-9af76d1ddb9b"  # Отправитель
+USER_B_ID = "00106854-30ae-4ab0-bf44-6f5802b541ed"  # Получатель
 
 CONCURRENT_REQUESTS = 50
-TRANSFER_AMOUNT = 100.0
+TRANSFER_AMOUNT = "20.00"
 
 
 async def send_transfer(client: httpx.AsyncClient, index: int):
@@ -19,7 +20,11 @@ async def send_transfer(client: httpx.AsyncClient, index: int):
         "amount": TRANSFER_AMOUNT,
     }
     try:
-        response = await client.post(f"{API_URL}/transfers", json=payload)
+        response = await client.post(
+            f"{API_URL}/transfers",
+            json=payload,
+            headers={"Idempotency-Key": f"abc-{str(uuid4())}"},
+        )
         return response.status_code, response.text
     except Exception as e:
         return 500, str(e)

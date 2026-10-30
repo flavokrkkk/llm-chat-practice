@@ -9,6 +9,9 @@ from sqlalchemy.exc import DBAPIError
 from starlette.exceptions import HTTPException
 
 from app.core.schemas.error import ErrorDetail, ErrorResponse, ValidationErrorItem
+from app.infrastructure.database.errors import (
+    get_sqlstate,
+)
 from app.infrastructure.errors.exceptions import AppException
 
 logger = logging.getLogger(__name__)
@@ -58,11 +61,6 @@ DB_ERRORS: dict[str, DbErrorMapping] = {
 DEFAULT_DB_ERROR = DbErrorMapping(
     500, DATABASE_ERROR_CODE, "Database error occurred", logging.ERROR
 )
-
-
-def is_transient(exc) -> bool:
-    sqlstate = getattr(exc.orig, "sqlstate", None)
-    return isinstance(sqlstate, str)
 
 
 def _build_error_detail(
@@ -160,11 +158,11 @@ async def validation_exception_handler(
 
 async def database_exception_handler(request: Request, exc: DBAPIError) -> JSONResponse:
     """Обработка ошибок PostgreSQL, нормализация в единый формат ответа."""
-    sqlstate = getattr(exc.orig, "sqlstate", None)
+    sqlstate = get_sqlstate(exc)
 
     mapping = (
         DB_ERRORS.get(sqlstate, DEFAULT_DB_ERROR)
-        if isinstance(sqlstate, str)
+        if sqlstate is not None
         else DEFAULT_DB_ERROR
     )
 

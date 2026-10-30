@@ -9,6 +9,7 @@ from app.core.services.chat_service import ChatService
 from app.core.services.message_service import MessageService
 from app.core.services.transfer_service import TransferService
 from app.core.services.user_service import UserService
+from app.infrastructure.config.config import settings
 from app.infrastructure.redis.cache import RedisCache
 
 
@@ -52,9 +53,7 @@ def get_user_service(
     return UserService(session, cache)
 
 
-def get_transfer_service(
-    session: SessionDep,
-) -> TransferService:
+def get_transfer_service(session: SessionDep) -> TransferService:
     """Функция для инъекции зависимости TransferService"""
 
-    return TransferService(session)
+    return TransferService(session, demo_delay=settings.transfer.demo_delay_seconds)

@@ -15,10 +15,15 @@ from app.infrastructure.errors.exceptions import (
 
 
 class TransferService:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, demo_delay: float) -> None:
         self.session = session
         self.transfer_repository = TransferRepository(session)
         self.user_repository = UserRepository(session)
+        self._demo_delay: float = demo_delay
+
+    async def _demo_pause(self) -> None:
+        if self._demo_delay > 0:
+            await asyncio.sleep(self._demo_delay)
 
     async def _create_or_get_existing(
         self,
@@ -40,7 +45,10 @@ class TransferService:
             )
 
             if existing is None:
-                raise RuntimeError("Использован некорректный ключ операции")
+                raise RuntimeError(
+                    f"Idempotency key {idempotency_key!r} conflicted on insert, "
+                    "but the existing transfer was not found"
+                )
             if not (
                 existing.from_user_id == from_user_id
                 and existing.to_user_id == to_user_id
@@ -71,7 +79,9 @@ class TransferService:
             if already_existed:
                 return transfer
 
-            balance = await self.user_repository.get_balance_for_update(from_user_id)
+            balance = await self.user_repository.get_balance_for_update(
+                user_id=from_user_id
+            )
 
             if balance < amount:
                 raise InsufficientFundsError(
@@ -108,13 +118,13 @@ class TransferService:
                 return transfer
 
             success = await self.user_repository.deduct_balance_atomic(
-                from_user_id, amount
+                user_id=from_user_id, amount=amount
             )
 
             if not success:
                 raise InsufficientFundsError("Недостаточно средств")
 
-            await self.user_repository.add_balance(to_user_id, amount)
+            await self.user_repository.add_balance(user_id=to_user_id, amount=amount)
 
             return transfer
 
@@ -126,10 +136,11 @@ class TransferService:
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema:
-        await self.session.connection(
-            execution_options={"isolation_level": "SERIALIZABLE"}
-        )
+
         async with self.session.begin():
+            await self.session.connection(
+                execution_options={"isolation_level": "SERIALIZABLE"}
+            )
             transfer, already_existed = await self._create_or_get_existing(
                 from_user_id=from_user_id,
                 to_user_id=to_user_id,
@@ -140,14 +151,14 @@ class TransferService:
             if already_existed:
                 return transfer
 
-            balance = await self.user_repository.get_balance(from_user_id)
+            balance = await self.user_repository.get_balance(user_id=from_user_id)
 
             if balance < amount:
                 raise InsufficientFundsError(
                     f"Недостаточно средств: {balance} < {amount}"
                 )
 
-            await asyncio.sleep(0.05)
+            await self._demo_pause()
 
             await self.user_repository.deduct_balance(
                 amount=amount, user_id=from_user_id
@@ -178,13 +189,17 @@ class TransferService:
             if already_existed:
                 return transfer
 
-            await self.user_repository.get_balance_for_update(from_user_id)
+            await self.user_repository.get_balance_for_update(user_id=from_user_id)
 
-            await self.user_repository.get_balance_for_update(to_user_id)
+            await self._demo_pause()
 
-            await self.user_repository.deduct_balance(from_user_id, amount)
+            await self.user_repository.get_balance_for_update(user_id=to_user_id)
 
-            await self.user_repository.add_balance(to_user_id, amount)
+            await self.user_repository.deduct_balance(
+                user_id=from_user_id, amount=amount
+            )
+
+            await self.user_repository.add_balance(user_id=to_user_id, amount=amount)
 
             return transfer
 
@@ -208,17 +223,23 @@ class TransferService:
             if already_existed:
                 return transfer
 
-            await self.user_repository.get_balance_for_update(first_id)
+            await self.user_repository.get_balance_for_update(user_id=first_id)
 
-            await self.user_repository.get_balance_for_update(second_id)
+            await self._demo_pause()
 
-            from_user_balance = await self.user_repository.get_balance(from_user_id)
+            await self.user_repository.get_balance_for_update(user_id=second_id)
+
+            from_user_balance = await self.user_repository.get_balance(
+                user_id=from_user_id
+            )
             if from_user_balance < amount:
                 raise InsufficientFundsError(
                     f"Недостаточно средств: {from_user_balance} < {amount}"
                 )
 
-            await self.user_repository.deduct_balance(from_user_id, amount)
-            await self.user_repository.add_balance(to_user_id, amount)
+            await self.user_repository.deduct_balance(
+                user_id=from_user_id, amount=amount
+            )
+            await self.user_repository.add_balance(user_id=to_user_id, amount=amount)
 
             return transfer

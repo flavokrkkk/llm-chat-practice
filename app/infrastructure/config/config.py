@@ -1,13 +1,17 @@
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import BaseModel, RedisDsn, field_validator
+from pydantic import BaseModel, Field, RedisDsn, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from sqlalchemy import URL
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 ENV_FILE = BASE_DIR / ".env"
+
+
+class TransferConfig(BaseModel):
+    demo_delay_seconds: float = 0.0
 
 
 class RedisConfig(BaseModel):
@@ -53,6 +57,7 @@ class Settings(BaseSettings):
     db: DatabaseConfig
     redis: RedisConfig
     cors_origins: Annotated[list[str], NoDecode]
+    transfer: TransferConfig = Field(default_factory=TransferConfig)
 
     @field_validator("cors_origins", mode="before")
     @classmethod
