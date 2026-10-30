@@ -1,57 +1,51 @@
 import logging
 
-import asyncpg
-from redis.exceptions import RedisError
+from pydantic import TypeAdapter, ValidationError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.clients.redis_client import RedisClient
 from app.core.repositories.user_repository import UserRepository
 from app.core.schemas.user import TopUserStatsSchema, UserSchema
+from app.infrastructure.redis.cache import RedisCache
 
 CACHE_USER_STATS_KEY = "cache:top_users"
-TTL_SECONDS = 60
+STATS_TTL_SECONDS = 60
+
+TOP_USERS_ADAPTER = TypeAdapter(list[TopUserStatsSchema])
+
 
 logger = logging.getLogger(__name__)
 
 
 class UserService:
-    def __init__(self, connection: asyncpg.Connection, redis_client: RedisClient):
-        self.user_repository = UserRepository(connection)
-        self.redis_client = redis_client
+    def __init__(self, session: AsyncSession, cache: RedisCache) -> None:
+        self.user_repository = UserRepository(session)
+        self.cache = cache
 
     async def get_user_by_email(self, email: str) -> UserSchema:
         return await self.user_repository.get_user_by_email(email)
 
     async def get_user_stats(self) -> list[TopUserStatsSchema]:
-        try:
-            cached_top_users = await self.redis_client.get(CACHE_USER_STATS_KEY)
-        except RedisError:
-            # Кэш — оптимизация, при недоступности Redis не должны падать
-            # основные сценарии: отчитываемся от кэш-ошибки и идем в БД.
-            logger.warning(
-                "Cache get failed for key=%s, fallback to database",
-                CACHE_USER_STATS_KEY,
-            )
-            cached_top_users = None
+        cached_top_users = await self.cache.get(CACHE_USER_STATS_KEY)
 
         if cached_top_users is not None:
-            return [
-                TopUserStatsSchema.model_validate(item) for item in cached_top_users
-            ]
+            try:
+                return TOP_USERS_ADAPTER.validate_python(cached_top_users)
+
+            except ValidationError:
+                logger.warning(
+                    "Cached value for key=%s does not match TopUserStatsSchema, "
+                    "deleting it and falling back to database",
+                    CACHE_USER_STATS_KEY,
+                    exc_info=True,
+                )
+                await self.cache.delete(key=CACHE_USER_STATS_KEY)
 
         top_users = await self.user_repository.get_user_stats()
 
-        top_users_for_cache = [
-            top_user.model_dump(mode="json") for top_user in top_users
-        ]
+        top_users_for_cache = TOP_USERS_ADAPTER.dump_python(top_users, mode="json")
 
-        try:
-            await self.redis_client.set(
-                CACHE_USER_STATS_KEY, top_users_for_cache, ttl=TTL_SECONDS
-            )
-        except RedisError:
-            logger.warning(
-                "Cache set failed for key=%s, continue without caching",
-                CACHE_USER_STATS_KEY,
-            )
+        await self.cache.set(
+            CACHE_USER_STATS_KEY, top_users_for_cache, ttl=STATS_TTL_SECONDS
+        )
 
         return top_users

@@ -1,13 +1,12 @@
 import logging
+from collections.abc import Mapping
+from typing import NamedTuple
 
-from asyncpg import (
-    DeadlockDetectedError,
-    PostgresError,
-    UniqueViolationError,
-)
 from fastapi import FastAPI, Request
-from fastapi.exceptions import HTTPException, RequestValidationError
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DBAPIError
+from starlette.exceptions import HTTPException
 
 from app.core.schemas.error import ErrorDetail, ErrorResponse, ValidationErrorItem
 from app.infrastructure.errors.exceptions import AppException
@@ -19,8 +18,57 @@ DATABASE_ERROR_CODE = "DATABASE_ERROR"
 SERVICE_UNAVAILABLE_CODE = "SERVICE_UNAVAILABLE"
 
 
+class DbErrorMapping(NamedTuple):
+    status_code: int
+    error_code: str
+    message: str
+    log_level: int
+
+
+DB_ERRORS: dict[str, DbErrorMapping] = {
+    "23505": DbErrorMapping(
+        409, "CONFLICT", "Resource already exists", logging.WARNING
+    ),
+    "23503": DbErrorMapping(
+        409,
+        "REFERENCE_CONFLICT",
+        "Referenced resource does not exist or is still in use",
+        logging.WARNING,
+    ),
+    "23514": DbErrorMapping(
+        409,
+        "CONSTRAINT_VIOLATION",
+        "Request violates data constraints",
+        logging.WARNING,
+    ),
+    "40P01": DbErrorMapping(
+        503,
+        SERVICE_UNAVAILABLE_CODE,
+        "Concurrent update conflict, please retry the request",
+        logging.ERROR,
+    ),
+    "40001": DbErrorMapping(
+        503,
+        SERVICE_UNAVAILABLE_CODE,
+        "Concurrent update conflict, please retry the request",
+        logging.WARNING,
+    ),
+}
+
+DEFAULT_DB_ERROR = DbErrorMapping(
+    500, DATABASE_ERROR_CODE, "Database error occurred", logging.ERROR
+)
+
+
+def is_transient(exc) -> bool:
+    sqlstate = getattr(exc.orig, "sqlstate", None)
+    return isinstance(sqlstate, str)
+
+
 def _build_error_detail(
-    code: str, message: str, details: list[ValidationErrorItem] | None = None
+    code: str,
+    message: str,
+    details: list[ValidationErrorItem] | None = None,
 ) -> ErrorDetail:
     return ErrorDetail(code=code, message=message, details=details or [])
 
@@ -29,16 +77,18 @@ def _error_response(
     status_code: int,
     error_code: str,
     message: str,
+    headers: Mapping[str, str] | None = None,
     details: list[ValidationErrorItem] | None = None,
 ) -> JSONResponse:
     error_detail = _build_error_detail(error_code, message, details)
     return JSONResponse(
         status_code=status_code,
+        headers=headers,
         content=ErrorResponse(detail=error_detail).model_dump(mode="json"),
     )
 
 
-async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
+async def app_exception_handler(_: Request, exc: AppException) -> JSONResponse:
     """Обработка ошибок домена и бизнес-логики приложения."""
 
     logger.warning(
@@ -55,7 +105,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
     )
 
 
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+async def http_exception_handler(_: Request, exc: HTTPException) -> JSONResponse:
     """Нормализация ошибок FastAPI (HTTPException) в единый формат ответа."""
 
     logger.warning("HTTPException: status=%s, detail=%s", exc.status_code, exc.detail)
@@ -66,6 +116,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         status_code=exc.status_code,
         error_code=error_code,
         message=str(exc.detail) if exc.detail is not None else "Request error",
+        headers=exc.headers,
     )
 
 
@@ -107,51 +158,32 @@ async def validation_exception_handler(
     )
 
 
-async def database_exception_handler(
-    request: Request, exc: PostgresError
-) -> JSONResponse:
+async def database_exception_handler(request: Request, exc: DBAPIError) -> JSONResponse:
     """Обработка ошибок PostgreSQL, нормализация в единый формат ответа."""
+    sqlstate = getattr(exc.orig, "sqlstate", None)
 
-    logger.error("Database error: code=%s, message=%s", exc.sqlstate, exc.message)
-
-    return _error_response(
-        status_code=500,
-        error_code=DATABASE_ERROR_CODE,
-        message="Database error occurred",
+    mapping = (
+        DB_ERRORS.get(sqlstate, DEFAULT_DB_ERROR)
+        if isinstance(sqlstate, str)
+        else DEFAULT_DB_ERROR
     )
 
-
-async def deadlock_exception_handler(
-    request: Request, exc: DeadlockDetectedError
-) -> JSONResponse:
-    """Ошибки взаимной блокировки транзакций (Deadlock)."""
-
-    logger.error("Deadlock detected: code=%s, message=%s", exc.sqlstate, exc.message)
-
-    return _error_response(
-        status_code=503,
-        error_code=SERVICE_UNAVAILABLE_CODE,
-        message="Database deadlock detected, operation could be retried",
-    )
-
-
-async def unique_violation_exception_handler(
-    request: Request, exc: UniqueViolationError
-) -> JSONResponse:
-    """Повторная вставка строки, нарушающая UNIQUE-ограничение."""
-
-    logger.warning(
-        "Unique violation: code=%s, constraint=%s", exc.sqlstate, exc.constraint_name
+    logger.log(
+        mapping.log_level,
+        "Database error: sqlstate=%s, path=%s",
+        sqlstate,
+        request.url.path,
+        exc_info=mapping.status_code >= 500,
     )
 
     return _error_response(
-        status_code=409,
-        error_code="CONFLICT",
-        message="Resource already exists",
+        status_code=mapping.status_code,
+        error_code=mapping.error_code,
+        message=mapping.message,
     )
 
 
-async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONResponse:
     """Fallback-обработчик: любая непредвиденная ошибка -> 500."""
 
     logger.exception("Unhandled exception: %s", exc)
@@ -166,10 +198,8 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 def register_exception_handlers(app: FastAPI) -> None:
     """Регистрация глобальных обработчиков ошибок в FastAPI-приложении."""
 
-    app.add_exception_handler(AppException, app_exception_handler)
-    app.add_exception_handler(HTTPException, http_exception_handler)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(DeadlockDetectedError, deadlock_exception_handler)
-    app.add_exception_handler(UniqueViolationError, unique_violation_exception_handler)
-    app.add_exception_handler(PostgresError, database_exception_handler)
+    app.add_exception_handler(AppException, app_exception_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(HTTPException, http_exception_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)  # pyright: ignore[reportArgumentType]
+    app.add_exception_handler(DBAPIError, database_exception_handler)  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(Exception, unhandled_exception_handler)

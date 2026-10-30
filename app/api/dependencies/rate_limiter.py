@@ -2,10 +2,12 @@ import logging
 from uuid import UUID
 
 from fastapi import Depends, Header
+from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
-from app.core.clients.redis_client import RedisClient, get_redis
 from app.infrastructure.errors.exceptions import RateLimitExceededError
+
+from .dependencies import get_redis
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +20,15 @@ class RateLimiter:
     async def __call__(
         self,
         user_id: UUID = Header(..., alias="X-User-Id", description="ID отправителя"),
-        redis: RedisClient = Depends(get_redis),
+        redis: Redis = Depends(get_redis),
     ):
         key = f"rate_limit:messages:{user_id}"
 
         try:
-            current = await redis.redis.incr(key)
+            current = await redis.incr(key)
 
             if current == 1:
-                await redis.redis.expire(key, self.window)
+                await redis.expire(key, self.window)
         except RedisError:
             # Fail-open: при недоступности Redis не блокируем запросы,
             # чтобы не превратить сбой инфраструктуры в полный даун для клиентов.

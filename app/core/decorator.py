@@ -2,17 +2,18 @@ import asyncio
 import functools
 import logging
 import random
+from typing import Awaitable, Callable
 
-import asyncpg
+from sqlalchemy.exc import DBAPIError
+
+from app.infrastructure.errors.error_handlers import is_transient
 
 logger = logging.getLogger(__name__)
 
-TRANSIENT_DB_ERRORS = (asyncpg.SerializationError, asyncpg.DeadlockDetectedError)
 
-
-def retry_on_transient_db_error(
-    max_retries: int = 5, delay: float = 0.05, backoff_factor: float = 2.0
-):
+def retry_on_transient_db_error[**P, R](
+    max_attempts: int = 5, delay: float = 0.05, backoff_factor: float = 2.0
+) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """Декоратор повторов для временных ошибок БД (сериализация, дедлоки).
 
     Транзакции, прерванные ошибкой, автоматически откатываются на уровне
@@ -22,15 +23,17 @@ def retry_on_transient_db_error(
 
     def decorator(func):
         @functools.wraps(func)
-        async def wrapper(*args, **kwargs):
-            for attempt in range(1, max_retries + 1):
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            for attempt in range(1, max_attempts):
                 try:
                     return await func(*args, **kwargs)
-                except TRANSIENT_DB_ERRORS:
-                    if attempt >= max_retries:
+                except DBAPIError as exc:
+                    if not is_transient(exc):
+                        raise
+                    if attempt >= max_attempts:
                         logger.error(
                             "Transient DB error not resolved after %s attempts: %s",
-                            max_retries,
+                            max_attempts,
                             args,
                         )
                         raise
@@ -41,10 +44,11 @@ def retry_on_transient_db_error(
                     logger.warning(
                         "Transient DB error on attempt %s/%s, retrying in %.2fs",
                         attempt,
-                        max_retries,
+                        max_attempts,
                         sleep_time,
                     )
                     await asyncio.sleep(sleep_time)
+            return await func(*args, **kwargs)
 
         return wrapper
 

@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import Depends, Request
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.services.chat_service import ChatService
@@ -18,6 +19,10 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
 
 def get_cache(request: Request) -> RedisCache:
     return request.app.state.cache
+
+
+def get_redis(request: Request) -> Redis:
+    return request.app.state.redis_connection.redis
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
