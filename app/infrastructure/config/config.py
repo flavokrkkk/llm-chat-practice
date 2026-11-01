@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, RedisDsn, field_validator
+from pydantic import BaseModel, Field, RedisDsn, SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -17,6 +17,13 @@ class TransferConfig(BaseModel):
 class RedisConfig(BaseModel):
     url: RedisDsn
     cache_ttl_seconds: int = 3600
+
+
+class JWTConfig(BaseModel):
+    secret: SecretStr
+    access_token_ttl_minutes: int = Field(default=15, gt=0)
+    refresh_token_ttl_days: int = Field(default=30, gt=0)
+    algorithm: Literal["HS256"] = "HS256"
 
 
 class DatabaseConfig(BaseModel):
@@ -56,6 +63,7 @@ class Settings(BaseSettings):
 
     db: DatabaseConfig
     redis: RedisConfig
+    jwt: JWTConfig
     cors_origins: Annotated[list[str], NoDecode]
     transfer: TransferConfig = Field(default_factory=TransferConfig)
 

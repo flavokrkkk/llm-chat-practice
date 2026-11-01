@@ -2,8 +2,14 @@ from datetime import timedelta
 from decimal import Decimal
 
 from sqlalchemy import func, select, update
+from sqlalchemy.dialects.postgresql import insert
 
-from app.core.schemas.user import TopUserStatsSchema, UserId, UserSchema
+from app.core.schemas.user import (
+    TopUserStatsSchema,
+    UserId,
+    UserSchema,
+    UserSchemaWithCredentials,
+)
 from app.infrastructure.database.models.chat import Chat
 from app.infrastructure.database.models.message import Message
 from app.infrastructure.database.models.user import User
@@ -13,6 +19,20 @@ from .base_repository import SqlAlchemyRepository
 
 
 class UserRepository(SqlAlchemyRepository):
+    async def create_user(
+        self, email: str, password_hash: str, full_name: str
+    ) -> UserSchema | None:
+        query = (
+            insert(User)
+            .values(email=email, password_hash=password_hash, full_name=full_name)
+            .on_conflict_do_nothing(index_elements=[func.lower(User.email)])
+            .returning(User)
+        )
+
+        row = (await self.session.execute(query)).scalar()
+
+        return UserSchema.model_validate(row) if row is not None else None
+
     async def get_user_by_id(self, user_id: UserId) -> UserSchema:
 
         result = await self.session.get(User, user_id)
@@ -31,6 +51,30 @@ class UserRepository(SqlAlchemyRepository):
             raise NotFoundError("User not found")
 
         return UserSchema.model_validate(result)
+
+    async def find_credentials_by_email(
+        self, email: str
+    ) -> None | UserSchemaWithCredentials:
+        query = select(User).where(func.lower(User.email) == email.lower())
+
+        result = await self.session.scalar(query)
+
+        if result is None:
+            return None
+
+        return UserSchemaWithCredentials.model_validate(result)
+
+    async def find_credentials_by_id(
+        self, user_id: UserId
+    ) -> None | UserSchemaWithCredentials:
+        query = select(User).where(User.id == user_id)
+
+        result = await self.session.scalar(query)
+
+        if result is None:
+            return None
+
+        return UserSchemaWithCredentials.model_validate(result)
 
     async def get_user_stats(self) -> list[TopUserStatsSchema]:
         messages_count = func.count(Message.id).label("messages_count")

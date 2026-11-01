@@ -5,6 +5,8 @@ from fastapi import Depends, Request
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import JWTManager, PasswordHasher
+from app.core.services.auth_service import AuthService
 from app.core.services.chat_service import ChatService
 from app.core.services.message_service import MessageService
 from app.core.services.transfer_service import TransferService
@@ -22,12 +24,22 @@ def get_cache(request: Request) -> RedisCache:
     return request.app.state.cache
 
 
+def get_password_hasher(request: Request) -> PasswordHasher:
+    return request.app.state.password_hasher
+
+
+def get_jwt_manager(request: Request) -> JWTManager:
+    return request.app.state.jwt_manager
+
+
 def get_redis(request: Request) -> Redis:
     return request.app.state.redis_connection.redis
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 CacheDep = Annotated[RedisCache, Depends(get_cache)]
+PasswordHasherDep = Annotated[PasswordHasher, Depends(get_password_hasher)]
+JWTManagerDep = Annotated[JWTManager, Depends(get_jwt_manager)]
 
 
 def get_chat_service(session: SessionDep) -> ChatService:
@@ -57,3 +69,11 @@ def get_transfer_service(session: SessionDep) -> TransferService:
     """Функция для инъекции зависимости TransferService"""
 
     return TransferService(session, demo_delay=settings.transfer.demo_delay_seconds)
+
+
+def get_auth_service(
+    session: SessionDep, jwt_manager: JWTManagerDep, password_hasher: PasswordHasherDep
+) -> AuthService:
+    """Функция для инъекции зависимости AuthService"""
+
+    return AuthService(session, jwt_manager, password_hasher)

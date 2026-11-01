@@ -20,6 +20,16 @@ class UserSchema(BaseSchema):
     email: EmailStr
     balance: Decimal
     created_at: datetime
+    is_active: bool
+
+
+class UserSchemaWithCredentials(BaseSchema):
+    id: UUID
+    email: EmailStr
+    balance: Decimal
+    created_at: datetime
+    password_hash: str
+    is_active: bool
 
 
 class TopUserStatsSchema(BaseSchema):

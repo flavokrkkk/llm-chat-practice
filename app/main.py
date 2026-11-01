@@ -5,6 +5,7 @@ from typing import AsyncIterator
 from fastapi import FastAPI
 
 from app.api.router import v1_router
+from app.core.security import JWTManager, PasswordHasher
 from app.infrastructure.config.config import settings
 from app.infrastructure.database.connection.postgres_connection import (
     DatabaseConnection,
@@ -25,6 +26,9 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     async with AsyncExitStack() as stack:
+        app.state.password_hasher = PasswordHasher()
+        app.state.jwt_manager = JWTManager(settings.jwt)
+
         db = DatabaseConnection(settings.db)
         stack.push_async_callback(db.close)
         app.state.db_connection = db
