@@ -164,3 +164,15 @@ class AuthService:
             raise InvalidToken()
 
         return result
+
+    async def logout(self, refresh_token: str) -> None:
+        token_hash = hash_refresh_token(refresh_token)
+        async with self.session.begin():
+            existing = await self.refresh_token_repository.find_token_by_hash(
+                token_hash=token_hash
+            )
+
+            if existing is not None:
+                await self.refresh_token_repository.revoke_family(existing.family_id)
+
+        return None

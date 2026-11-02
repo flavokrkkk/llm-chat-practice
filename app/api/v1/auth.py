@@ -9,6 +9,7 @@ from app.core.services.auth_service import AuthService
 from app.infrastructure.errors.auth_exceptions import InvalidToken
 from app.utils.cookie import (
     REFRESH_TOKEN_COOKIE_KEY,
+    delete_refresh_cookie,
     set_refresh_cookie,
 )
 
@@ -64,3 +65,19 @@ async def refresh_token(
     )
 
     return TokenResponse(access_token=token_result.access_token)
+
+
+@router.post("/logout", status_code=204)
+async def logout(
+    response: Response,
+    auth_service: Annotated[AuthService, Depends(get_auth_service)],
+    refresh_token_cookie: Annotated[
+        str | None, Cookie(alias=REFRESH_TOKEN_COOKIE_KEY)
+    ] = None,
+) -> None:
+    if refresh_token_cookie is None:
+        return None
+
+    await auth_service.logout(refresh_token_cookie)
+
+    delete_refresh_cookie(response)

@@ -43,4 +43,4 @@ class RefreshTokenSchema(BaseSchema):
     expires_at: datetime
     revoked_at: datetime | None
     user_id: UUID
-    replaced_by_id: UUID
+    replaced_by_id: UUID | None

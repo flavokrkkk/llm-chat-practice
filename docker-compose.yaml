@@ -3,6 +3,7 @@ x-backend-env: &backend-env
   DB__USER: llm-chat
   DB__PASSWORD: llm-chat
   DB__HOST: postgres
+  WT__SECRET: ${JWT__SECRET:?JWT__SECRET is required}
   DB__PORT: 5432
   REDIS__URL: redis://redis:6379/0
   CORS_ORIGINS: http://localhost:5173

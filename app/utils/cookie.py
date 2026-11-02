@@ -18,3 +18,13 @@ def set_refresh_cookie(response: Response, value: str, expires_at: datetime):
     )
 
     response.headers["Cache-Control"] = "no-store"
+
+
+def delete_refresh_cookie(response: Response):
+    response.delete_cookie(
+        key=REFRESH_TOKEN_COOKIE_KEY,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        path=REFRESH_TOKEN_COOKIE_PATH,
+    )
