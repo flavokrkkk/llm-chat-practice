@@ -26,7 +26,9 @@ class User(UUIDPkMixin, CreatedAtMixin, Base):
         Numeric(19, 2),
         server_default=text("0"),
     )
-    password_hash: Mapped[str] = mapped_column(String(255))
+    password_hash: Mapped[str] = mapped_column(
+        String(255), deferred=True, deferred_raiseload=True
+    )
     is_active: Mapped[bool] = mapped_column(server_default=text("true"))
 
     chats: Mapped[list["Chat"]] = relationship(

@@ -1,8 +1,9 @@
+from uuid import UUID
+
 from sqlalchemy import func, literal_column, select, true
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.schemas.chat import ChatId, ChatSchema, ChatWithMessagesSchema
-from app.core.schemas.user import UserId
 from app.infrastructure.database.models.chat import Chat
 from app.infrastructure.database.models.message import Message
 from app.infrastructure.errors.exceptions import NotFoundError
@@ -19,7 +20,7 @@ class ChatRepository(SqlAlchemyRepository):
 
         return ChatSchema.model_validate(result)
 
-    async def get_user_chats(self, user_id: UserId) -> list[ChatWithMessagesSchema]:
+    async def get_user_chats(self, user_id: UUID) -> list[ChatWithMessagesSchema]:
         recent_messages = (
             select(
                 Message.id,

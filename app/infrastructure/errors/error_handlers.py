@@ -129,6 +129,10 @@ def _error_code_by_status(status_code: int) -> str:
         return "BAD_REQUEST"
     if status_code == 409:
         return "CONFLICT"
+    if status_code == 401:
+        return "UNAUTHORIZED"
+    if status_code == 403:
+        return "FORBIDDEN"
     return "HTTP_ERROR"
 
 

@@ -1,12 +1,13 @@
 from datetime import timedelta
 from decimal import Decimal
+from uuid import UUID
 
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import undefer
 
 from app.core.schemas.user import (
     TopUserStatsSchema,
-    UserId,
     UserSchema,
     UserSchemaWithCredentials,
 )
@@ -33,7 +34,7 @@ class UserRepository(SqlAlchemyRepository):
 
         return UserSchema.model_validate(row) if row is not None else None
 
-    async def get_user_by_id(self, user_id: UserId) -> UserSchema:
+    async def get_user_by_id(self, user_id: UUID) -> UserSchema:
 
         result = await self.session.get(User, user_id)
 
@@ -55,7 +56,11 @@ class UserRepository(SqlAlchemyRepository):
     async def find_credentials_by_email(
         self, email: str
     ) -> None | UserSchemaWithCredentials:
-        query = select(User).where(func.lower(User.email) == email.lower())
+        query = (
+            select(User)
+            .where(func.lower(User.email) == email.lower())
+            .options(undefer(User.password_hash))
+        )
 
         result = await self.session.scalar(query)
 
@@ -64,17 +69,15 @@ class UserRepository(SqlAlchemyRepository):
 
         return UserSchemaWithCredentials.model_validate(result)
 
-    async def find_credentials_by_id(
-        self, user_id: UserId
-    ) -> None | UserSchemaWithCredentials:
+    async def find_user_by_id(self, user_id: UUID) -> None | UserSchema:
         query = select(User).where(User.id == user_id)
 
-        result = await self.session.scalar(query)
+        result = (await self.session.execute(query)).scalar_one_or_none()
 
         if result is None:
             return None
 
-        return UserSchemaWithCredentials.model_validate(result)
+        return UserSchema.model_validate(result)
 
     async def get_user_stats(self) -> list[TopUserStatsSchema]:
         messages_count = func.count(Message.id).label("messages_count")
@@ -99,7 +102,7 @@ class UserRepository(SqlAlchemyRepository):
 
         return [TopUserStatsSchema.model_validate(row) for row in result.mappings()]
 
-    async def get_balance_for_update(self, user_id: UserId) -> Decimal:
+    async def get_balance_for_update(self, user_id: UUID) -> Decimal:
         query = (
             select(User.balance)
             .where(User.id == user_id)
@@ -113,7 +116,7 @@ class UserRepository(SqlAlchemyRepository):
 
         return result
 
-    async def get_balance(self, user_id: UserId) -> Decimal:
+    async def get_balance(self, user_id: UUID) -> Decimal:
         query = select(User.balance).where(User.id == user_id)
 
         result = await self.session.scalar(query)
@@ -123,7 +126,7 @@ class UserRepository(SqlAlchemyRepository):
 
         return result
 
-    async def deduct_balance(self, user_id: UserId, amount: Decimal) -> None:
+    async def deduct_balance(self, user_id: UUID, amount: Decimal) -> None:
         query = (
             update(User)
             .where(User.id == user_id)
@@ -136,7 +139,7 @@ class UserRepository(SqlAlchemyRepository):
         if updated_id is None:
             raise NotFoundError("User not found")
 
-    async def add_balance(self, user_id: UserId, amount: Decimal) -> None:
+    async def add_balance(self, user_id: UUID, amount: Decimal) -> None:
         query = (
             update(User)
             .where(User.id == user_id)
@@ -148,7 +151,7 @@ class UserRepository(SqlAlchemyRepository):
         if updated_id is None:
             raise NotFoundError("User not found")
 
-    async def deduct_balance_atomic(self, user_id: UserId, amount: Decimal) -> bool:
+    async def deduct_balance_atomic(self, user_id: UUID, amount: Decimal) -> bool:
         query = (
             update(User)
             .where(User.id == user_id)

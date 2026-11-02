@@ -5,7 +5,6 @@ from uuid import UUID
 from sqlalchemy import func, insert, select, update
 
 from app.core.schemas.auth import RefreshTokenSchema
-from app.core.schemas.user import UserId
 from app.infrastructure.database.models import RefreshToken
 
 from .base_repository import SqlAlchemyRepository
@@ -13,7 +12,7 @@ from .base_repository import SqlAlchemyRepository
 
 class RevokedRefreshToken(NamedTuple):
     id: UUID
-    user_id: UserId
+    user_id: UUID
     family_id: UUID
 
 

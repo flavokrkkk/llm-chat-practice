@@ -7,7 +7,6 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.core.schemas.base import CursorPaginationResponse
 from app.core.schemas.transfer import TransferSchema
-from app.core.schemas.user import UserId
 from app.infrastructure.database.models.transfer import Transfer
 
 from .base_repository import SqlAlchemyRepository
@@ -16,8 +15,8 @@ from .base_repository import SqlAlchemyRepository
 class TransferRepository(SqlAlchemyRepository):
     async def create_transfer(
         self,
-        from_user_id: UserId,
-        to_user_id: UserId,
+        from_user_id: UUID,
+        to_user_id: UUID,
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema | None:
@@ -49,7 +48,7 @@ class TransferRepository(SqlAlchemyRepository):
 
     async def get_transfer_history_keyset(
         self,
-        user_id: UserId,
+        user_id: UUID,
         limit: int,
         cursor_id: UUID | None = None,
         cursor_created_at: datetime | None = None,

@@ -121,7 +121,7 @@ class AuthService:
                         existing.family_id
                     )
             else:
-                user = await self.user_repository.find_credentials_by_id(
+                user = await self.user_repository.find_user_by_id(
                     user_id=revoked.user_id
                 )
 

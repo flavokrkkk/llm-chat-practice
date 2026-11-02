@@ -1,10 +1,14 @@
 import logging
+from uuid import UUID
 
 from pydantic import TypeAdapter, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.repositories.user_repository import UserRepository
-from app.core.schemas.user import TopUserStatsSchema, UserSchema
+from app.core.schemas.user import (
+    TopUserStatsSchema,
+    UserSchema,
+)
 from app.infrastructure.redis.cache import RedisCache
 
 CACHE_USER_STATS_KEY = "cache:top_users"
@@ -19,6 +23,7 @@ logger = logging.getLogger(__name__)
 class UserService:
     def __init__(self, session: AsyncSession, cache: RedisCache) -> None:
         self.user_repository = UserRepository(session)
+        self.session = session
         self.cache = cache
 
     async def get_user_by_email(self, email: str) -> UserSchema:
@@ -49,3 +54,7 @@ class UserService:
         )
 
         return top_users
+
+    async def get_user_by_id(self, user_id: UUID) -> UserSchema | None:
+        async with self.session.begin():
+            return await self.user_repository.find_user_by_id(user_id)

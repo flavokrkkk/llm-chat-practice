@@ -1,5 +1,6 @@
 import asyncio
 from decimal import Decimal
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,7 +8,6 @@ from app.core.decorator import retry_on_transient_db_error
 from app.core.repositories.transfer_repository import TransferRepository
 from app.core.repositories.user_repository import UserRepository
 from app.core.schemas.transfer import TransferSchema
-from app.core.schemas.user import UserId
 from app.infrastructure.errors.exceptions import (
     ConflictError,
     InsufficientFundsError,
@@ -27,8 +27,8 @@ class TransferService:
 
     async def _create_or_get_existing(
         self,
-        from_user_id: UserId,
-        to_user_id: UserId,
+        from_user_id: UUID,
+        to_user_id: UUID,
         amount: Decimal,
         idempotency_key: str,
     ) -> tuple[TransferSchema, bool]:
@@ -62,8 +62,8 @@ class TransferService:
 
     async def transfer_for_update(
         self,
-        from_user_id: UserId,
-        to_user_id: UserId,
+        from_user_id: UUID,
+        to_user_id: UUID,
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema:
@@ -101,8 +101,8 @@ class TransferService:
 
     async def transfer_atomic_update(
         self,
-        from_user_id: UserId,
-        to_user_id: UserId,
+        from_user_id: UUID,
+        to_user_id: UUID,
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema:
@@ -131,8 +131,8 @@ class TransferService:
     @retry_on_transient_db_error(max_attempts=15, delay=0.02)
     async def transfer_serializable_update(
         self,
-        from_user_id: UserId,
-        to_user_id: UserId,
+        from_user_id: UUID,
+        to_user_id: UUID,
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema:
@@ -173,8 +173,8 @@ class TransferService:
 
     async def transfer_deadlock_prone(
         self,
-        from_user_id: UserId,
-        to_user_id: UserId,
+        from_user_id: UUID,
+        to_user_id: UUID,
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema:
@@ -205,8 +205,8 @@ class TransferService:
 
     async def transfer_deadlock_free(
         self,
-        from_user_id: UserId,
-        to_user_id: UserId,
+        from_user_id: UUID,
+        to_user_id: UUID,
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema:

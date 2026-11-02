@@ -1,8 +1,14 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query
 from pydantic import EmailStr
 
-from app.api.dependencies.dependencies import get_chat_service, get_user_service
-from app.core.schemas.user import UserId
+from app.api.dependencies.dependencies import (
+    CurrentUserDep,
+    get_chat_service,
+    get_user_service,
+)
+from app.core.schemas.user import UserSchema
 from app.core.services.chat_service import ChatService
 from app.core.services.user_service import UserService
 
@@ -19,7 +25,14 @@ async def get_chat_by_id(
 
 @router.get("/{user_id}/chats")
 async def get_user_chats(
-    user_id: UserId,
+    user_id: UUID,
     chat_service: ChatService = Depends(get_chat_service),
 ):
     return await chat_service.get_user_chats(user_id)
+
+
+@router.get("/me")
+async def get_me(
+    current_user: CurrentUserDep,
+) -> UserSchema:
+    return current_user
