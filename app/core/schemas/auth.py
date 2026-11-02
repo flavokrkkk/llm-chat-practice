@@ -11,6 +11,8 @@ from pydantic import (
     StringConstraints,
 )
 
+from .base import BaseSchema
+
 
 class RegisterRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -34,7 +36,7 @@ class TokenResponse(BaseModel):
     token_type: Literal["bearer"] = "bearer"
 
 
-class RefreshTokenSchema(BaseModel):
+class RefreshTokenSchema(BaseSchema):
     id: UUID
     token_hash: str
     family_id: UUID
