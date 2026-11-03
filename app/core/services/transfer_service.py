@@ -210,6 +210,10 @@ class TransferService:
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema:
+
+        if from_user_id == to_user_id:
+            raise ConflictError(message="")
+
         first_id, second_id = sorted([from_user_id, to_user_id])
 
         async with self.session.begin():
