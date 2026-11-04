@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import insert
 from app.core.schemas.base import CursorPaginationResponse, PaginationResponse
 from app.core.schemas.chat import ChatId
 from app.core.schemas.message import MessageRole, MessageSchema
-from app.infrastructure.database.models import Message
+from app.infrastructure.database.models import Chat, Message
 from app.infrastructure.errors.exceptions import NotFoundError
 
 from .base_repository import SqlAlchemyRepository
@@ -16,24 +16,26 @@ from .base_repository import SqlAlchemyRepository
 
 class MessageRepository(SqlAlchemyRepository):
     async def get_chat_messages(
-        self, chat_id: ChatId, limit: int
+        self, user_id: UUID, chat_id: ChatId, limit: int
     ) -> list[MessageSchema]:
 
         query = (
             select(Message)
+            .join(Chat, Message.chat_id == chat_id)
             .where(Message.chat_id == chat_id)
+            .where(Chat.user_id == user_id)
             .order_by(Message.created_at.desc(), Message.id.desc())
             .limit(limit)
         )
 
-        result = await self.session.scalars(query)
+        result = (await self.session.execute(query)).scalars()
 
         messages = [MessageSchema.model_validate(x) for x in result]
 
         return messages
 
     async def get_chat_messages_offset(
-        self, chat_id: ChatId, limit: int, offset: int
+        self, user_id: UUID, chat_id: ChatId, limit: int, offset: int
     ) -> PaginationResponse:
 
         total_query = select(func.count(Message.id)).where(Message.chat_id == chat_id)
@@ -42,6 +44,8 @@ class MessageRepository(SqlAlchemyRepository):
 
         query = (
             select(Message)
+            .join(Chat, Chat.id == chat_id)
+            .where(Chat.user_id == user_id)
             .where(Message.chat_id == chat_id)
             .order_by(Message.created_at.desc(), Message.id.desc())
             .limit(limit)
@@ -59,6 +63,7 @@ class MessageRepository(SqlAlchemyRepository):
 
     async def get_chat_messages_keyset(
         self,
+        user_id: UUID,
         chat_id: ChatId,
         limit: int,
         cursor_id: Optional[UUID] = None,
@@ -67,7 +72,9 @@ class MessageRepository(SqlAlchemyRepository):
 
         final_query = (
             select(Message)
+            .join(Chat, Chat.id == chat_id)
             .where(Message.chat_id == chat_id)
+            .where(Chat.user_id == user_id)
             .order_by(Message.created_at.desc(), Message.id.desc())
             .limit(limit + 1)
         )

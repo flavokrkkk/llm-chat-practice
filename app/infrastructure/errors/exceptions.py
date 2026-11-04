@@ -59,3 +59,10 @@ class RateLimitExceededError(AppException):
 
     status_code = 429
     error_code = "RATE_LIMIT_EXCEEDED"
+
+
+class ServiceUnavailableError(AppException):
+    """Concurrent update conflict, please retry the request"""
+
+    status_code = 503
+    error_code = "SERVICE_UNAVAILABLE"

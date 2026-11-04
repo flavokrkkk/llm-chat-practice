@@ -10,9 +10,8 @@ class ChatService:
     def __init__(self, session: AsyncSession) -> None:
         self.chat_repository = ChatRepository(session)
 
-    async def get_chat_by_id(self, chat_id: ChatId) -> ChatSchema:
-        # учитывать user_id
-        return await self.chat_repository.get_chat_by_id(chat_id)
+    async def get_chat_by_id(self, chat_id: ChatId, user_id: UUID) -> ChatSchema:
+        return await self.chat_repository.get_chat_by_id(chat_id, user_id)
 
     async def get_user_chats(self, user_id: UUID) -> list[ChatWithMessagesSchema]:
         return await self.chat_repository.get_user_chats(user_id)

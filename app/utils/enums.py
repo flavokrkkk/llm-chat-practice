@@ -21,3 +21,8 @@ class PendingActionStatus(enum.StrEnum):
     REJECTED = "rejected"
     EXPIRED = "expired"
     DONE = "done"
+
+
+class RateLimitScope(enum.StrEnum):
+    LOGIN = "login"
+    MESSAGES = "messages"

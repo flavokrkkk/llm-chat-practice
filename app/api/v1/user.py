@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, Query
 from pydantic import EmailStr
 
@@ -16,19 +14,19 @@ router = APIRouter()
 
 
 @router.get("/by-email")
-async def get_chat_by_id(
+async def get_user_by_email(
     email: EmailStr = Query(..., description="Электронная почта пользователя"),
     user_service: UserService = Depends(get_user_service),
 ):
     return await user_service.get_user_by_email(email)
 
 
-@router.get("/{user_id}/chats")
+@router.get("/me/chats")
 async def get_user_chats(
-    user_id: UUID,
+    current_user: CurrentUserDep,
     chat_service: ChatService = Depends(get_chat_service),
 ):
-    return await chat_service.get_user_chats(user_id)
+    return await chat_service.get_user_chats(user_id=current_user.id)
 
 
 @router.get("/me")

@@ -17,25 +17,29 @@ class MessageService:
         self.session = session
 
     async def get_chat_messages(
-        self, chat_id: ChatId, limit: int
+        self, user_id: UUID, chat_id: ChatId, limit: int
     ) -> list[MessageSchema]:
-        return await self.message_repository.get_chat_messages(chat_id, limit)
+        return await self.message_repository.get_chat_messages(
+            user_id=user_id, chat_id=chat_id, limit=limit
+        )
 
     async def get_chat_messages_offset(
-        self, chat_id: ChatId, limit: int, offset: int
+        self, user_id: UUID, chat_id: ChatId, limit: int, offset: int
     ) -> PaginationResponse:
         return await self.message_repository.get_chat_messages_offset(
-            chat_id=chat_id, limit=limit, offset=offset
+            user_id=user_id, chat_id=chat_id, limit=limit, offset=offset
         )
 
     async def get_chat_messages_keyset(
         self,
+        user_id: UUID,
         chat_id: ChatId,
         limit: int,
         cursor_id: UUID | None = None,
         cursor_created_at: datetime | None = None,
     ) -> CursorPaginationResponse:
         return await self.message_repository.get_chat_messages_keyset(
+            user_id=user_id,
             chat_id=chat_id,
             limit=limit,
             cursor_id=cursor_id,
@@ -44,17 +48,17 @@ class MessageService:
 
     async def create_chat_message(
         self,
+        user_id: UUID,
         chat_id: ChatId,
-        role: MessageRole,
         content: str,
         idempotency_key: str | None,
     ) -> MessageSchema:
         async with self.session.begin():
-            await self.chat_repository.get_chat_by_id(chat_id)
+            await self.chat_repository.get_chat_by_id(chat_id, user_id)
 
             return await self.message_repository.create_message(
                 chat_id=chat_id,
-                role=role,
+                role=MessageRole.USER,
                 content=content,
                 idempotency_key=idempotency_key,
             )

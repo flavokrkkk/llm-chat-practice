@@ -9,6 +9,7 @@ from app.core.repositories.transfer_repository import TransferRepository
 from app.core.repositories.user_repository import UserRepository
 from app.core.schemas.transfer import TransferSchema
 from app.infrastructure.errors.exceptions import (
+    BadRequestError,
     ConflictError,
     InsufficientFundsError,
 )
@@ -20,6 +21,10 @@ class TransferService:
         self.transfer_repository = TransferRepository(session)
         self.user_repository = UserRepository(session)
         self._demo_delay: float = demo_delay
+
+    def _validate_transfer(self, from_user_id: UUID, to_user_id: UUID) -> None:
+        if from_user_id == to_user_id:
+            raise BadRequestError("Cannot transfer funds to yourself")
 
     async def _demo_pause(self) -> None:
         if self._demo_delay > 0:
@@ -68,6 +73,8 @@ class TransferService:
         idempotency_key: str,
     ) -> TransferSchema:
 
+        self._validate_transfer(from_user_id, to_user_id)
+
         async with self.session.begin():
             transfer, already_existed = await self._create_or_get_existing(
                 from_user_id=from_user_id,
@@ -106,6 +113,8 @@ class TransferService:
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema:
+        self._validate_transfer(from_user_id, to_user_id)
+
         async with self.session.begin():
             transfer, already_existed = await self._create_or_get_existing(
                 from_user_id=from_user_id,
@@ -136,6 +145,7 @@ class TransferService:
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema:
+        self._validate_transfer(from_user_id, to_user_id)
 
         async with self.session.begin():
             await self.session.connection(
@@ -178,6 +188,8 @@ class TransferService:
         amount: Decimal,
         idempotency_key: str,
     ) -> TransferSchema:
+        self._validate_transfer(from_user_id, to_user_id)
+
         async with self.session.begin():
             transfer, already_existed = await self._create_or_get_existing(
                 from_user_id=from_user_id,
@@ -211,8 +223,7 @@ class TransferService:
         idempotency_key: str,
     ) -> TransferSchema:
 
-        if from_user_id == to_user_id:
-            raise ConflictError(message="")
+        self._validate_transfer(from_user_id, to_user_id)
 
         first_id, second_id = sorted([from_user_id, to_user_id])
 
@@ -238,7 +249,7 @@ class TransferService:
             )
             if from_user_balance < amount:
                 raise InsufficientFundsError(
-                    f"Недостаточно средств: {from_user_balance} < {amount}"
+                    f"Недостаточно средств: {from_user_balance} < {amount.quantize(Decimal('0.01'))}"
                 )
 
             await self.user_repository.deduct_balance(

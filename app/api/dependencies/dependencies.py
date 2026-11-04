@@ -45,6 +45,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 CacheDep = Annotated[RedisCache, Depends(get_cache)]
 PasswordHasherDep = Annotated[PasswordHasher, Depends(get_password_hasher)]
 JWTManagerDep = Annotated[JWTManager, Depends(get_jwt_manager)]
+RedisDep = Annotated[Redis, Depends(get_redis)]
 
 
 def get_chat_service(session: SessionDep) -> ChatService:

@@ -12,9 +12,14 @@ from .base_repository import SqlAlchemyRepository
 
 
 class ChatRepository(SqlAlchemyRepository):
-    async def get_chat_by_id(self, chat_id: ChatId) -> ChatSchema:
-        result = await self.session.get(Chat, chat_id)
+    async def get_chat_by_id(self, chat_id: ChatId, user_id: UUID) -> ChatSchema:
+        result = (
+            await self.session.execute(
+                select(Chat).where(Chat.id == chat_id, Chat.user_id == user_id)
+            )
+        ).scalar_one_or_none()
 
+        print("RESULT", result)
         if result is None:
             raise NotFoundError("Chat not found")
 

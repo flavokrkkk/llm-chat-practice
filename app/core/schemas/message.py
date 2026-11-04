@@ -12,7 +12,6 @@ MessageId = NewType("MessageId", BaseId)
 
 
 class MessageCreate(BaseModel):
-    role: MessageRole
     content: str = Field(..., min_length=1)
 
 
@@ -21,5 +20,4 @@ class MessageSchema(BaseSchema):
     chat_id: UUID
     role: MessageRole
     content: str
-    idempotency_key: str | None
     created_at: datetime
