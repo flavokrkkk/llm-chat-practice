@@ -12,6 +12,12 @@ v1_router = APIRouter(prefix="/v1")
 
 PROTECTED = Depends(get_current_user)
 
+
+@v1_router.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 v1_router.include_router(auth_router, tags=["auth"], prefix="/auth")
 v1_router.include_router(
     chat_router, tags=["chats"], prefix="/chats", dependencies=[PROTECTED]

@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import APIRouter, Cookie, Depends, Response
 
 from app.api.dependencies.dependencies import get_auth_service
-from app.api.dependencies.rate_limiter import limit_login
 from app.core.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 from app.core.schemas.user import UserSchema
 from app.core.services.auth_service import AuthService
@@ -27,7 +26,8 @@ async def register(
     )
 
 
-@router.post("/login", dependencies=[Depends(limit_login)])
+# @router.post("/login", dependencies=[Depends(limit_login)])
+@router.post("/login")
 async def login(
     payload: LoginRequest,
     auth_service: Annotated[AuthService, Depends(get_auth_service)],
