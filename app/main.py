@@ -26,7 +26,9 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     async with AsyncExitStack() as stack:
-        app.state.password_hasher = PasswordHasher()
+        app.state.password_hasher = PasswordHasher(
+            max_concurrency=settings.password_hash.max_concurrency
+        )
         app.state.jwt_manager = JWTManager(settings.jwt)
 
         db = DatabaseConnection(settings.db)

@@ -1,4 +1,5 @@
 import asyncio
+import statistics
 import time
 
 import httpx
@@ -49,11 +50,20 @@ async def main():
                 await asyncio.sleep(0.05)
 
         async def run_logins(client):
-            await asyncio.gather(*[login(client, user_a) for _ in range(50)])
+            await asyncio.gather(*[login(client, user_a) for _ in range(100)])
             done.set()
 
-        await asyncio.gather(pinger(client), run_logins(client))
+        await asyncio.gather(
+            pinger(client),
+            run_logins(client),
+        )
+
+        out = statistics.quantiles(latencies, n=100)
+        p50 = out[50 - 1]
+        p99 = out[99 - 1]
+
+        print(f"p50={p50}, p99={p99}")
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     asyncio.run(main())

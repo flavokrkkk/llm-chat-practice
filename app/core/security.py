@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import secrets
 from datetime import UTC, datetime
@@ -18,20 +19,27 @@ class GeneratedRefreshToken(NamedTuple):
 
 
 class PasswordHasher:
-    def __init__(self) -> None:
+    def __init__(self, max_concurrency: int) -> None:
+        self._semaphore = asyncio.Semaphore(max_concurrency)
         self._hasher = PasswordHash.recommended()
         self.dummy_hash = self._hasher.hash("dummy-password-for-timing")
 
-    def hash_password(self, password: str) -> str:
-        return self._hasher.hash(password)
+    async def hash_password(self, password: str) -> str:
+        async with self._semaphore:
+            return await asyncio.to_thread(self._hasher.hash, password)
 
-    def verify_password(self, password: str, hashed_password: str) -> bool:
-        return self._hasher.verify(password, hashed_password)
+    async def verify_password(self, password: str, hashed_password: str) -> bool:
+        async with self._semaphore:
+            return await asyncio.to_thread(
+                self._hasher.verify, password, hashed_password
+            )
 
-    def verify_and_update_password(
+    async def verify_and_update_password(
         self, password: str, hashed_password: str
     ) -> tuple[bool, str | None]:
-        return self._hasher.verify_and_update(password, hashed_password)
+        return await asyncio.to_thread(
+            self._hasher.verify_and_update, password, hashed_password
+        )
 
 
 class JWTManager:

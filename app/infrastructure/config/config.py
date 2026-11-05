@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -8,6 +9,18 @@ from sqlalchemy import URL
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 ENV_FILE = BASE_DIR / ".env"
+
+cp_count = os.cpu_count()
+CP_DEFAULT = 4
+
+
+def _default_hash_concurrency() -> int:
+    cpus = os.process_cpu_count() or 4
+    return max(1, cpus - 1)
+
+
+class PasswordHashConfig(BaseModel):
+    max_concurrency: int = Field(default_factory=_default_hash_concurrency, ge=1)
 
 
 class TransferConfig(BaseModel):
@@ -32,8 +45,8 @@ class DatabaseConfig(BaseModel):
     password: str
     host: str
     port: int
-    pool_size: int = 5
-    max_overflow: int = 10
+    pool_size: int = Field(default=5, gt=0)
+    max_overflow: int = Field(default=10, ge=0)
     pool_pre_ping: bool = True
     echo: bool = False
 
@@ -66,6 +79,7 @@ class Settings(BaseSettings):
     jwt: JWTConfig
     cors_origins: Annotated[list[str], NoDecode]
     transfer: TransferConfig = Field(default_factory=TransferConfig)
+    password_hash: PasswordHashConfig = Field(default_factory=PasswordHashConfig)
 
     @field_validator("cors_origins", mode="before")
     @classmethod

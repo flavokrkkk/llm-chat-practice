@@ -45,7 +45,9 @@ class AuthService:
     async def register(
         self, full_name: str, password: SecretStr, email: str
     ) -> UserSchema:
-        password_hash = self.password_hasher.hash_password(password.get_secret_value())
+        password_hash = await self.password_hasher.hash_password(
+            password.get_secret_value()
+        )
 
         async with self.session.begin():
             user = await self.user_repository.create_user(
@@ -69,7 +71,7 @@ class AuthService:
             else self.password_hasher.dummy_hash
         )
 
-        password_ok = self.password_hasher.verify_password(
+        password_ok = await self.password_hasher.verify_password(
             password.get_secret_value(), hash_to_check
         )
 

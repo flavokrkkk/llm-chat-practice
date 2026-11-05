@@ -4,3 +4,6 @@
 список моделей или значений одной колонки	.scalars().all()	список
 несколько колонок, по строке на запись	.mappings().all()	
 
+
+ex
+uv run python scripts/loop-lag.py
