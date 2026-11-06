@@ -5,5 +5,5 @@
 несколько колонок, по строке на запись	.mappings().all()	
 
 
-ex
 uv run python scripts/loop-lag.py
+PYTHONASYNCIODEBUG=1 uv run uvicorn app.main:app --port 8080

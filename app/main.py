@@ -21,11 +21,16 @@ from app.infrastructure.redis.connection import RedisConnection
 handler = logging.StreamHandler()
 handler.addFilter(RequestIdFilter())
 
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] [%(request_id)s] %(name)s: %(message)s",
     handlers=[handler],
 )
+
+if settings.db.echo:
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+
 
 logger = logging.getLogger(__name__)
 

@@ -53,10 +53,7 @@ async def main():
             await asyncio.gather(*[login(client, user_a) for _ in range(100)])
             done.set()
 
-        await asyncio.gather(
-            pinger(client),
-            run_logins(client),
-        )
+        await asyncio.gather(pinger(client), run_logins(client))
 
         out = statistics.quantiles(latencies, n=100)
         p50 = out[50 - 1]
