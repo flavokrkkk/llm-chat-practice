@@ -71,7 +71,7 @@ def _build_error_detail(
     return ErrorDetail(code=code, message=message, details=details or [])
 
 
-def _error_response(
+def error_response(
     status_code: int,
     error_code: str,
     message: str,
@@ -96,7 +96,7 @@ async def app_exception_handler(_: Request, exc: AppException) -> JSONResponse:
         exc.message,
     )
 
-    return _error_response(
+    return error_response(
         status_code=exc.status_code,
         error_code=exc.error_code,
         message=exc.message,
@@ -110,7 +110,7 @@ async def http_exception_handler(_: Request, exc: HTTPException) -> JSONResponse
 
     error_code = _error_code_by_status(exc.status_code)
 
-    return _error_response(
+    return error_response(
         status_code=exc.status_code,
         error_code=error_code,
         message=str(exc.detail) if exc.detail is not None else "Request error",
@@ -152,7 +152,7 @@ async def validation_exception_handler(
 
     logger.warning("Validation error: %s, path=%s", errors, request.url.path)
 
-    return _error_response(
+    return error_response(
         status_code=422,
         error_code="VALIDATION_ERROR",
         message="Validation error",
@@ -178,22 +178,10 @@ async def database_exception_handler(request: Request, exc: DBAPIError) -> JSONR
         exc_info=mapping.status_code >= 500,
     )
 
-    return _error_response(
+    return error_response(
         status_code=mapping.status_code,
         error_code=mapping.error_code,
         message=mapping.message,
-    )
-
-
-async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONResponse:
-    """Fallback-обработчик: любая непредвиденная ошибка -> 500."""
-
-    logger.exception("Unhandled exception: %s", exc)
-
-    return _error_response(
-        status_code=500,
-        error_code=INTERNAL_ERROR_CODE,
-        message="Internal server error",
     )
 
 
@@ -204,4 +192,3 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(HTTPException, http_exception_handler)  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(RequestValidationError, validation_exception_handler)  # pyright: ignore[reportArgumentType]
     app.add_exception_handler(DBAPIError, database_exception_handler)  # pyright: ignore[reportArgumentType]
-    app.add_exception_handler(Exception, unhandled_exception_handler)
