@@ -11,6 +11,9 @@ from app.infrastructure.database.connection.postgres_connection import (
     DatabaseConnection,
 )
 from app.infrastructure.errors.error_handlers import register_exception_handlers
+from app.infrastructure.middleware.logging_middleware import (
+    IdentificationRequestLogMiddleware,
+)
 from app.infrastructure.redis.cache import RedisCache
 from app.infrastructure.redis.connection import RedisConnection
 
@@ -46,5 +49,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="llm-chat", lifespan=lifespan)
+
 app.include_router(v1_router, prefix="/api")
+
+app.add_middleware(IdentificationRequestLogMiddleware)
+
 register_exception_handlers(app)
