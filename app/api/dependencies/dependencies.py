@@ -14,7 +14,10 @@ from app.core.services.message_service import MessageService
 from app.core.services.transfer_service import TransferService
 from app.core.services.user_service import UserService
 from app.infrastructure.config.config import settings
-from app.infrastructure.errors.auth_exceptions import AccountDisabledError, InvalidToken
+from app.infrastructure.errors.auth_exceptions import (
+    AccountDisabledError,
+    InvalidTokenError,
+)
 from app.infrastructure.redis.cache import RedisCache
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -80,10 +83,10 @@ async def get_current_user(
     user = await user_service.get_user_by_id(user_id)
 
     if user is None:
-        raise InvalidToken()
+        raise InvalidTokenError("Failed to verify credentials")
 
     if not user.is_active:
-        raise AccountDisabledError()
+        raise AccountDisabledError("Your account is blocked!")
 
     return user
 

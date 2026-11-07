@@ -17,7 +17,7 @@ from app.core.security import (
 from app.infrastructure.errors.auth_exceptions import (
     AccountDisabledError,
     InvalidCredentialsError,
-    InvalidToken,
+    InvalidTokenError,
 )
 from app.infrastructure.errors.exceptions import ConflictError
 from app.utils.date import get_expires_at
@@ -76,10 +76,10 @@ class AuthService:
         )
 
         if credentials is None or not password_ok:
-            raise InvalidCredentialsError()
+            raise InvalidCredentialsError("Please check the entered data!")
 
         if not credentials.is_active:
-            raise AccountDisabledError()
+            raise AccountDisabledError("Your account is blocked!")
 
         refresh_token = generate_refresh_token()
         expires_at = get_expires_at(
@@ -160,10 +160,10 @@ class AuthService:
                     )
 
         if account_disabled_or_invalid_user:
-            raise AccountDisabledError()
+            raise AccountDisabledError("Your account is blocked!")
 
         if result is None:
-            raise InvalidToken()
+            raise InvalidTokenError("Failed to verify credentials")
 
         return result
 

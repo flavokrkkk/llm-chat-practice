@@ -7,7 +7,7 @@ from app.api.dependencies.rate_limiter import limit_login
 from app.core.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 from app.core.schemas.user import UserSchema
 from app.core.services.auth_service import AuthService
-from app.infrastructure.errors.auth_exceptions import InvalidToken
+from app.infrastructure.errors.auth_exceptions import InvalidTokenError
 from app.utils.cookie import (
     REFRESH_TOKEN_COOKIE_KEY,
     delete_refresh_cookie,
@@ -55,7 +55,7 @@ async def refresh_token(
     ] = None,
 ) -> TokenResponse:
     if refresh_token_cookie is None:
-        raise InvalidToken()
+        raise InvalidTokenError("Failed to verify credentials")
 
     token_result = await auth_service.refresh(refresh_token_cookie)
 

@@ -9,7 +9,7 @@ import jwt
 from pwdlib import PasswordHash
 
 from app.infrastructure.config.config import JWTConfig
-from app.infrastructure.errors.auth_exceptions import InvalidToken
+from app.infrastructure.errors.auth_exceptions import InvalidTokenError
 from app.utils.date import get_expires_at
 
 
@@ -73,14 +73,14 @@ class JWTManager:
             sub = payload["sub"]
 
             if not isinstance(sub, str):
-                raise InvalidToken
+                raise InvalidTokenError("Failed to verify credentials")
 
             user_id = UUID(sub)
 
             return user_id
 
         except (jwt.InvalidTokenError, ValueError):
-            raise InvalidToken from None
+            raise InvalidTokenError("Failed to verify credentials") from None
 
 
 def hash_refresh_token(raw: str) -> str:
