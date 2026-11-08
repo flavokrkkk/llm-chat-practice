@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import DBAPIError
 from starlette.exceptions import HTTPException
 
+from app.core.request_context import request_id_var
 from app.core.schemas.error import ErrorDetail, ErrorResponse, ValidationErrorItem
 from app.infrastructure.database.errors import (
     get_sqlstate,
@@ -68,7 +69,12 @@ def _build_error_detail(
     message: str,
     details: list[ValidationErrorItem] | None = None,
 ) -> ErrorDetail:
-    return ErrorDetail(code=code, message=message, details=details or [])
+    return ErrorDetail(
+        code=code,
+        message=message,
+        details=details or [],
+        request_id=request_id_var.get(),
+    )
 
 
 def error_response(

@@ -26,6 +26,12 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "api: нужен запущенный сервер",
+]
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 88
@@ -40,3 +46,4 @@ known-first-party = ["app"]
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+

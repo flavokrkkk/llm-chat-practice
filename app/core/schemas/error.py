@@ -19,6 +19,7 @@ class ErrorDetail(BaseModel):
     details: list[ValidationErrorItem] = Field(
         default_factory=list, description="Дополнительные детали ошибки"
     )
+    request_id: str
 
 
 class ErrorResponse(BaseModel):
