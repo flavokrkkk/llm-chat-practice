@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import NewType
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .base import BaseId, BaseSchema
 from .message import MessageSchema
@@ -11,6 +11,8 @@ ChatId = NewType("ChatId", BaseId)
 
 
 class ChatCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     title: str = Field(..., min_length=1, max_length=255)
 
 

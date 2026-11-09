@@ -16,10 +16,10 @@ from app.core.security import (
 )
 from app.infrastructure.errors.auth_exceptions import (
     AccountDisabledError,
+    EmailAlreadyRegisteredError,
     InvalidCredentialsError,
     InvalidTokenError,
 )
-from app.infrastructure.errors.exceptions import ConflictError
 from app.utils.date import get_expires_at
 
 
@@ -57,7 +57,7 @@ class AuthService:
             )
 
             if user is None:
-                raise ConflictError("Email already registered")
+                raise EmailAlreadyRegisteredError("Email already registered")
 
             return user
 

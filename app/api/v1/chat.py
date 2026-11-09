@@ -9,7 +9,7 @@ from app.api.dependencies.dependencies import (
     get_message_service,
 )
 from app.api.dependencies.rate_limiter import limit_messages
-from app.core.schemas.chat import ChatId
+from app.core.schemas.chat import ChatCreate, ChatId
 from app.core.schemas.message import MessageCreate
 from app.core.services.chat_service import ChatService
 from app.core.services.message_service import MessageService
@@ -24,6 +24,15 @@ async def get_chat_by_id(
     chat_service: ChatService = Depends(get_chat_service),
 ):
     return await chat_service.get_chat_by_id(chat_id=chat_id, user_id=current_user.id)
+
+
+@router.post("", status_code=201)
+async def create_chat(
+    chat_dto: ChatCreate,
+    current_user: CurrentUserDep,
+    chat_service: ChatService = Depends(get_chat_service),
+):
+    return await chat_service.create_chat(user_id=current_user.id, title=chat_dto.title)
 
 
 @router.get("/{chat_id}/messages")

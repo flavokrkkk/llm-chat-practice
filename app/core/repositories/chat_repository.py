@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import func, literal_column, select, true
+from sqlalchemy import func, insert, literal_column, select, true
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.schemas.chat import ChatId, ChatSchema, ChatWithMessagesSchema
@@ -12,6 +12,13 @@ from .base_repository import SqlAlchemyRepository
 
 
 class ChatRepository(SqlAlchemyRepository):
+    async def create_chat(self, user_id: UUID, title: str):
+        query = insert(Chat).values(user_id=user_id, title=title).returning(Chat)
+
+        result = (await self.session.execute(query)).scalar_one()
+
+        return ChatSchema.model_validate(result)
+
     async def get_chat_by_id(self, chat_id: ChatId, user_id: UUID) -> ChatSchema:
         result = (
             await self.session.execute(
@@ -19,7 +26,6 @@ class ChatRepository(SqlAlchemyRepository):
             )
         ).scalar_one_or_none()
 
-        print("RESULT", result)
         if result is None:
             raise NotFoundError("Chat not found")
 

@@ -15,3 +15,6 @@ class ChatService:
 
     async def get_user_chats(self, user_id: UUID) -> list[ChatWithMessagesSchema]:
         return await self.chat_repository.get_user_chats(user_id)
+
+    async def create_chat(self, user_id: UUID, title: str) -> ChatSchema:
+        return await self.chat_repository.create_chat(user_id=user_id, title=title)
