@@ -19,6 +19,14 @@ def _default_hash_concurrency() -> int:
     return max(1, cpus - 1)
 
 
+class LLMConfig(BaseModel):
+    base_url: str = "http://localhost:11434"
+    model: str
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    timeout_seconds: float = Field(default=60.0, gt=0)
+    num_ctx: int = Field(default=8192, gt=0)
+
+
 class PasswordHashConfig(BaseModel):
     max_concurrency: int = Field(default_factory=_default_hash_concurrency, ge=1)
 
@@ -77,6 +85,7 @@ class Settings(BaseSettings):
     db: DatabaseConfig
     redis: RedisConfig
     jwt: JWTConfig
+    llm: LLMConfig
     cors_origins: Annotated[list[str], NoDecode]
     transfer: TransferConfig = Field(default_factory=TransferConfig)
     password_hash: PasswordHashConfig = Field(default_factory=PasswordHashConfig)
