@@ -108,6 +108,9 @@ class MessageRepository(SqlAlchemyRepository):
         role: MessageRole,
         content: str,
         idempotency_key: str | None,
+        tokens_in: int | None = None,
+        tokens_out: int | None = None,
+        latency_ms: int | None = None,
     ) -> MessageSchema:
 
         query = (
@@ -117,6 +120,9 @@ class MessageRepository(SqlAlchemyRepository):
                 role=role,
                 content=content,
                 idempotency_key=idempotency_key,
+                tokens_in=tokens_in,
+                tokens_out=tokens_out,
+                latency_ms=latency_ms,
             )
             .on_conflict_do_nothing(
                 index_elements=[Message.chat_id, Message.idempotency_key]

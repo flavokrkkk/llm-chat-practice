@@ -66,3 +66,8 @@ class ServiceUnavailableError(AppException):
 
     status_code = 503
     error_code = "SERVICE_UNAVAILABLE"
+
+
+class LLMUnavailableError(AppException):
+    status_code = 503
+    error_code = "LLM_UNAVAILABLE"

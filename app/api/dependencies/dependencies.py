@@ -3,10 +3,10 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-from langgraph.graph.state import CompiledStateGraph
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agent.graph.state import AgentGraph
 from app.core.schemas.user import UserSchema
 from app.core.security import JWTManager, PasswordHasher
 from app.core.services.auth_service import AuthService
@@ -45,11 +45,11 @@ def get_redis(request: Request) -> Redis:
     return request.app.state.redis_connection.redis
 
 
-def get_graph(request: Request) -> CompiledStateGraph:
+def get_graph(request: Request) -> AgentGraph:
     return request.app.state.graph
 
 
-GraphDep = Annotated[CompiledStateGraph, Depends(get_graph)]
+GraphDep = Annotated[AgentGraph, Depends(get_graph)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 CacheDep = Annotated[RedisCache, Depends(get_cache)]
 PasswordHasherDep = Annotated[PasswordHasher, Depends(get_password_hasher)]
@@ -63,12 +63,10 @@ def get_chat_service(session: SessionDep) -> ChatService:
     return ChatService(session)
 
 
-def get_message_service(
-    session: SessionDep,
-) -> MessageService:
+def get_message_service(session: SessionDep, graph: GraphDep) -> MessageService:
     """Функция для инъекции зависимости MessageService"""
 
-    return MessageService(session)
+    return MessageService(session, graph)
 
 
 def get_user_service(
