@@ -25,6 +25,7 @@ class LLMConfig(BaseModel):
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     timeout_seconds: float = Field(default=60.0, gt=0)
     num_ctx: int = Field(default=8192, gt=0)
+    num_predict: int = Field(default=1024, gt=0)
 
 
 class PasswordHashConfig(BaseModel):

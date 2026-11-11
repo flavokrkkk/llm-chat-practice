@@ -26,3 +26,8 @@ class PendingActionStatus(enum.StrEnum):
 class RateLimitScope(enum.StrEnum):
     LOGIN = "login"
     MESSAGES = "messages"
+
+
+class Node(enum.StrEnum):
+    AGENT = "agent"
+    TOOLS = "tools"

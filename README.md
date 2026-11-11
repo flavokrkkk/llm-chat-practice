@@ -6,7 +6,7 @@
 
 
 uv run python scripts/loop-lag.py
-PYTHONASYNCIODEBUG=1 uv run uvicorn app.main:app --port 8080
+PYTHONASYNCIODEBUG=1 uv run uvicorn app.main:app --reload --port 8080
 
 <!-- Тесты -->
 uv run pytest -v                                   # имя каждого теста и результат
