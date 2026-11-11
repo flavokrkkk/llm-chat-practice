@@ -19,6 +19,11 @@ def _default_hash_concurrency() -> int:
     return max(1, cpus - 1)
 
 
+class CheckpointerConfig(BaseModel):
+    pool_min_size: int = Field(default=1, ge=0)
+    pool_max_size: int = Field(default=10, gt=0)
+
+
 class LLMConfig(BaseModel):
     base_url: str = "http://localhost:11434"
     model: str
@@ -90,6 +95,7 @@ class Settings(BaseSettings):
     cors_origins: Annotated[list[str], NoDecode]
     transfer: TransferConfig = Field(default_factory=TransferConfig)
     password_hash: PasswordHashConfig = Field(default_factory=PasswordHashConfig)
+    checkpointer: CheckpointerConfig = Field(default_factory=CheckpointerConfig)
 
     @field_validator("cors_origins", mode="before")
     @classmethod

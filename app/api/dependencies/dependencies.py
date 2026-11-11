@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
+from langgraph.graph.state import CompiledStateGraph
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,6 +45,11 @@ def get_redis(request: Request) -> Redis:
     return request.app.state.redis_connection.redis
 
 
+def get_graph(request: Request) -> CompiledStateGraph:
+    return request.app.state.graph
+
+
+GraphDep = Annotated[CompiledStateGraph, Depends(get_graph)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 CacheDep = Annotated[RedisCache, Depends(get_cache)]
 PasswordHasherDep = Annotated[PasswordHasher, Depends(get_password_hasher)]
