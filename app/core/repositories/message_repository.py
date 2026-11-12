@@ -102,27 +102,21 @@ class MessageRepository(SqlAlchemyRepository):
             items=items, next_created_at=next_created_at, next_id=next_id, limit=limit
         )
 
-    async def create_message(
+    async def create_or_get_message(
         self,
         chat_id: ChatId,
-        role: MessageRole,
         content: str,
         idempotency_key: str | None,
-        tokens_in: int | None = None,
-        tokens_out: int | None = None,
-        latency_ms: int | None = None,
-    ) -> MessageSchema:
+    ) -> tuple[MessageSchema, bool]:
+        """Возвращает (сообщение, created). created=False — повтор по ключу."""
 
         query = (
             insert(Message)
             .values(
                 chat_id=chat_id,
-                role=role,
+                role=MessageRole.USER,
                 content=content,
                 idempotency_key=idempotency_key,
-                tokens_in=tokens_in,
-                tokens_out=tokens_out,
-                latency_ms=latency_ms,
             )
             .on_conflict_do_nothing(
                 index_elements=[Message.chat_id, Message.idempotency_key]
@@ -132,16 +126,70 @@ class MessageRepository(SqlAlchemyRepository):
 
         row = await self.session.scalar(query)
 
-        if row is None:
-            conflict_query = select(Message).where(
-                Message.chat_id == chat_id, Message.idempotency_key == idempotency_key
-            )
+        if row is not None:
+            return MessageSchema.model_validate(row), True
 
-            message = await self.session.scalar(conflict_query)
+        if idempotency_key is None:
+            raise RuntimeError("Insert conflict without idempotency_key")
 
-            row = message
+        existing = await self.find_by_idempotency_key(chat_id, idempotency_key)
 
-        if row is None:
+        if existing is None:
             raise NotFoundError("Message not found")
 
-        return MessageSchema.model_validate(row)
+        return existing, False
+
+    async def create_reply(
+        self,
+        chat_id: ChatId,
+        content: str,
+        reply_to_id: UUID,
+        tokens_in: int | None = None,
+        tokens_out: int | None = None,
+        latency_ms: int | None = None,
+    ) -> MessageSchema:
+
+        query = (
+            insert(Message)
+            .values(
+                chat_id=chat_id,
+                role=MessageRole.ASSISTANT,
+                content=content,
+                tokens_in=tokens_in,
+                tokens_out=tokens_out,
+                latency_ms=latency_ms,
+                reply_to_id=reply_to_id,
+            )
+            .on_conflict_do_nothing(index_elements=[Message.reply_to_id])
+            .returning(Message)
+        )
+
+        row = await self.session.scalar(query)
+
+        if row is not None:
+            return MessageSchema.model_validate(row)
+
+        existing = await self.find_reply_to(reply_to_id)
+
+        if existing is None:
+            raise NotFoundError("Reply not found")
+
+        return existing
+
+    async def find_by_idempotency_key(
+        self, chat_id: UUID, idempotency_key: str
+    ) -> MessageSchema | None:
+        query = select(Message).where(
+            Message.chat_id == chat_id, Message.idempotency_key == idempotency_key
+        )
+
+        row = (await self.session.execute(query)).scalar_one_or_none()
+
+        return MessageSchema.model_validate(row) if row is not None else None
+
+    async def find_reply_to(self, message_id: UUID) -> MessageSchema | None:
+        query = select(Message).where(Message.reply_to_id == message_id)
+
+        row = (await self.session.execute(query)).scalar_one_or_none()
+
+        return MessageSchema.model_validate(row) if row is not None else None

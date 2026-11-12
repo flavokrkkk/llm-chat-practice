@@ -1,7 +1,11 @@
+import httpx
 from langchain_core.language_models import BaseChatModel
 from langchain_ollama import ChatOllama
+from ollama import ResponseError
 
 from app.infrastructure.config.config import LLMConfig
+
+LLM_PROVIDER_ERRORS: tuple[type[Exception], ...] = (ResponseError, httpx.HTTPError)
 
 
 def create_chat_model(config: LLMConfig) -> BaseChatModel:

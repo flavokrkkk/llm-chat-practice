@@ -19,6 +19,11 @@ def _default_hash_concurrency() -> int:
     return max(1, cpus - 1)
 
 
+class AgentConfig(BaseModel):
+    recursion_limit: int = Field(default=10, gt=0)
+    run_timeout_seconds: float = Field(default=60.0, gt=0)
+
+
 class CheckpointerConfig(BaseModel):
     pool_min_size: int = Field(default=1, ge=0)
     pool_max_size: int = Field(default=10, gt=0)
@@ -96,6 +101,7 @@ class Settings(BaseSettings):
     transfer: TransferConfig = Field(default_factory=TransferConfig)
     password_hash: PasswordHashConfig = Field(default_factory=PasswordHashConfig)
     checkpointer: CheckpointerConfig = Field(default_factory=CheckpointerConfig)
+    agent: AgentConfig = Field(default_factory=AgentConfig)
 
     @field_validator("cors_origins", mode="before")
     @classmethod

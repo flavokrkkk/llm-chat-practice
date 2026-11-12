@@ -66,7 +66,11 @@ def get_chat_service(session: SessionDep) -> ChatService:
 def get_message_service(session: SessionDep, graph: GraphDep) -> MessageService:
     """Функция для инъекции зависимости MessageService"""
 
-    return MessageService(session, graph)
+    return MessageService(
+        session,
+        graph,
+        agent_config=settings.agent,
+    )
 
 
 def get_user_service(

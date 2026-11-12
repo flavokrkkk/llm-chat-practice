@@ -16,3 +16,7 @@ uv run pytest -x                                   # остановиться н
 uv run pytest --lf                                 # перезапустить только упавшие в прошлый раз
 uv run pytest -m "not api"                         # только unit, без сервера
 uv run pytest -s                                   # показывать print() из тестов
+
+
+<!-- Миграции -->
+uv run alembic revision --autogenerate -m "add reply_to_id to messages"

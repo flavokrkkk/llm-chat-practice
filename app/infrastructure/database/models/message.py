@@ -53,6 +53,11 @@ class Message(UUIDPkMixin, CreatedAtMixin, Base):
     role: Mapped[MessageRole] = mapped_column(
         str_enum(MessageRole, name="role", length=10)
     )
+    reply_to_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("messages.id", ondelete="CASCADE"),
+        unique=True,
+    )
+
     tokens_in: Mapped[int | None]
     tokens_out: Mapped[int | None]
     latency_ms: Mapped[int | None]
