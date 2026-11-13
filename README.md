@@ -20,3 +20,4 @@ uv run pytest -s                                   # показывать print(
 
 <!-- Миграции -->
 uv run alembic revision --autogenerate -m "add reply_to_id to messages"
+uv run alembic upgrade head
