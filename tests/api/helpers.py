@@ -26,6 +26,17 @@ async def create_chat(client, headers: dict, title: str = "Test chat") -> str:
     return r.json()["id"]
 
 
+async def create_message(
+    client, headers: dict, chat_id: str, content: str = "Привет! Что ты умеешь?"
+) -> dict:
+    r = await client.post(
+        f"/chats/{chat_id}/messages", json={"content": content}, headers=headers
+    )
+
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
 async def refresh(client, token: str) -> httpx.Response:
     """Отправляет refresh именно с этим токеном."""
     client.cookies.clear()

@@ -31,11 +31,13 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+addopts = "--strict-markers"
 markers = [
     "api: нужен запущенный сервер",
+    "llm: нужна запущенная Ollama, медленные",
 ]
-asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 88
@@ -50,4 +52,3 @@ known-first-party = ["app"]
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
-
