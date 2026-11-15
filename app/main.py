@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from app.agent.checkpointer import create_checkpointer
 from app.agent.graph.pipeline import build_graph
 from app.agent.llm import create_chat_model
+from app.agent.tools.deps import ToolDeps
 from app.api.router import v1_router
 from app.core.request_context import RequestIdFilter
 from app.core.security import JWTManager, PasswordHasher
@@ -55,8 +56,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             create_checkpointer(settings.db, settings.checkpointer)
         )
 
-        app.state.graph = build_graph(create_chat_model(settings.llm), checkpointer)
-
         redis = RedisConnection(settings.redis)
         stack.push_async_callback(redis.close)
         app.state.redis_connection = redis
@@ -64,8 +63,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.cache = RedisCache(
             redis=redis.redis, default_ttl=settings.redis.cache_ttl_seconds
         )
+
+        app.state.graph = build_graph(
+            llm=create_chat_model(settings.llm),
+            checkpointer=checkpointer,
+            deps=ToolDeps(session_factory=db.session_factory, cache=app.state.cache),
+        )
+
         yield
 
+
+logger.info("LLM: provider=%s model=%s", settings.llm.provider, settings.llm.model)
 
 app = FastAPI(title="llm-chat", lifespan=lifespan)
 

@@ -2,7 +2,14 @@ import os
 from pathlib import Path
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, RedisDsn, SecretStr, field_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    RedisDsn,
+    SecretStr,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -30,12 +37,20 @@ class CheckpointerConfig(BaseModel):
 
 
 class LLMConfig(BaseModel):
+    provider: Literal["ollama", "nvidia"] = "ollama"
     base_url: str = "http://localhost:11434"
     model: str
+    api_key: SecretStr | None = None
     temperature: float = Field(default=0.0, ge=0.0, le=2.0)
     timeout_seconds: float = Field(default=60.0, gt=0)
     num_ctx: int = Field(default=8192, gt=0)
-    num_predict: int = Field(default=1024, gt=0)
+    max_output_tokens: int = Field(default=1024, gt=0)
+
+    @model_validator(mode="after")
+    def check_provider_settings(self) -> "LLMConfig":
+        if self.provider == "nvidia" and self.api_key is None:
+            raise ValueError("LLM__API_KEY is required for nvidia provider")
+        return self
 
 
 class PasswordHashConfig(BaseModel):
