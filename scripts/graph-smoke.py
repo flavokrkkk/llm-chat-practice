@@ -1,6 +1,7 @@
 import asyncio
 
 from langchain_core.messages import HumanMessage
+from langgraph.checkpoint.memory import InMemorySaver
 
 from app.agent.graph.pipeline import build_graph
 from app.agent.llm import create_chat_model
@@ -18,7 +19,7 @@ CASES = [
 async def main():
     llm = create_chat_model(settings.llm)
 
-    graph = build_graph(llm)
+    graph = build_graph(llm, checkpointer=InMemorySaver(), tools=[])
 
     results = []
 
