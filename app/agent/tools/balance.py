@@ -13,7 +13,7 @@ def make_get_balance(deps: ToolDeps):
 
         user_id = runtime.context.user_id
 
-        async with deps.session_factory() as session, session.begin():
+        async with deps.session_factory() as session:
             user = await UserService(session, deps.cache).get_user_by_id(user_id)
 
         if user is None:

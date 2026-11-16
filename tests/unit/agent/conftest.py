@@ -16,4 +16,4 @@ def fake_llm() -> RecordingFakeModel:
 
 @pytest.fixture
 def graph(fake_llm) -> AgentGraph:
-    return build_graph(fake_llm, InMemorySaver())
+    return build_graph(llm=fake_llm, checkpointer=InMemorySaver(), tools=[])

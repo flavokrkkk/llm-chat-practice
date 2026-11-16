@@ -117,7 +117,9 @@ async def test_same_message_id_is_not_duplicated(graph):
 )
 async def test_provider_error_becomes_llm_unavailable(error):
     graph = build_graph(
-        FailingFakeModel(messages=iter([]), error=error), InMemorySaver()
+        llm=FailingFakeModel(messages=iter([]), error=error),
+        checkpointer=InMemorySaver(),
+        tools=[],
     )
 
     with pytest.raises(LLMUnavailableError) as exc_info:

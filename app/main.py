@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from app.agent.checkpointer import create_checkpointer
 from app.agent.graph.pipeline import build_graph
 from app.agent.llm import create_chat_model
+from app.agent.tools import make_tools
 from app.agent.tools.deps import ToolDeps
 from app.api.router import v1_router
 from app.core.request_context import RequestIdFilter
@@ -64,10 +65,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             redis=redis.redis, default_ttl=settings.redis.cache_ttl_seconds
         )
 
+        tools = make_tools(
+            ToolDeps(session_factory=db.session_factory, cache=app.state.cache)
+        )
+
         app.state.graph = build_graph(
-            llm=create_chat_model(settings.llm),
-            checkpointer=checkpointer,
-            deps=ToolDeps(session_factory=db.session_factory, cache=app.state.cache),
+            llm=create_chat_model(settings.llm), checkpointer=checkpointer, tools=tools
         )
 
         yield
