@@ -8,6 +8,7 @@ from langchain_core.messages import HumanMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.graph.state import AgentContext, AgentGraph
+from app.agent.usage import sum_usage_after
 from app.core.repositories.chat_repository import ChatRepository
 from app.core.repositories.message_repository import MessageRepository
 from app.core.schemas.base import CursorPaginationResponse, PaginationResponse
@@ -104,10 +105,10 @@ class MessageService:
 
         latency_ms = int((time.perf_counter() - start_time) * 1000)
         ai_message = agent_response["messages"][-1]
-        usage = ai_message.usage_metadata
 
-        tokens_in = usage["input_tokens"] if usage else None
-        tokens_out = usage["output_tokens"] if usage else None
+        tokens_in, tokens_out = sum_usage_after(
+            messages=agent_response["messages"], message_id=str(message.id)
+        )
 
         logger.info(
             "agent reply: chat_id=%s tokens_in=%s tokens_out=%s latency_ms=%d",

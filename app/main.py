@@ -66,7 +66,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         )
 
         tools = make_tools(
-            ToolDeps(session_factory=db.session_factory, cache=app.state.cache)
+            ToolDeps(
+                session_factory=db.session_factory,
+                cache=app.state.cache,
+                currency=settings.agent.currency,
+            )
         )
 
         app.state.graph = build_graph(

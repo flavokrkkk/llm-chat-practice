@@ -29,6 +29,7 @@ def _default_hash_concurrency() -> int:
 class AgentConfig(BaseModel):
     recursion_limit: int = Field(default=10, gt=0)
     run_timeout_seconds: float = Field(default=60.0, gt=0)
+    currency: str = "₸"
 
 
 class CheckpointerConfig(BaseModel):
