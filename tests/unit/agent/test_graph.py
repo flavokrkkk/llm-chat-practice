@@ -3,7 +3,6 @@ import uuid
 import httpx
 import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import InMemorySaver
 from ollama import ResponseError
 
@@ -12,10 +11,7 @@ from app.agent.graph.state import AgentContext
 from app.agent.prompts.system import get_system_prompt
 from app.infrastructure.errors.exceptions import LLMUnavailableError
 from tests.unit.agent.fakes import FailingFakeModel
-
-
-def run_config(thread_id: str) -> RunnableConfig:
-    return {"configurable": {"thread_id": thread_id}}
+from tests.unit.agent.helpers import run_config
 
 
 async def test_reply_is_added_and_system_prompt_is_not_saved(graph):

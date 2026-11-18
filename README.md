@@ -17,6 +17,8 @@ uv run pytest --lf                                 # перезапустить 
 uv run pytest -m "not api"                         # только unit, без сервера
 uv run pytest -s                                   # показывать print() из тестов
 
+uv run pytest tests/unit/agent -s -k user_id_from_context - с логами
+
 
 <!-- Миграции -->
 uv run alembic revision --autogenerate -m "add reply_to_id to messages"

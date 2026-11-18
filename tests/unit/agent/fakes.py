@@ -3,7 +3,14 @@ from langchain_core.messages import BaseMessage
 from pydantic import Field
 
 
-class RecordingFakeModel(GenericFakeChatModel):
+class ToolBindableFakeModel(GenericFakeChatModel):
+    """Фейковая модель, которую можно передать в build_graph."""
+
+    def bind_tools(self, tools, **kwargs):
+        return self
+
+
+class RecordingFakeModel(ToolBindableFakeModel):
     calls: list[list[BaseMessage]] = Field(default_factory=list)
 
     def _generate(self, messages, stop=None, run_manager=None, **kwargs):
@@ -11,7 +18,7 @@ class RecordingFakeModel(GenericFakeChatModel):
         return super()._generate(messages, stop, run_manager, **kwargs)
 
 
-class FailingFakeModel(GenericFakeChatModel):
+class FailingFakeModel(ToolBindableFakeModel):
     """Модель, которая падает с заданной ошибкой на любой вызов."""
 
     error: Exception
