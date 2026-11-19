@@ -18,8 +18,9 @@ def build_graph(
     checkpointer: BaseCheckpointSaver | None = None,
 ) -> AgentGraph:
     builder = StateGraph(AgentState, context_schema=AgentContext)
+    tool_names = frozenset(t.name for t in tools)
 
-    builder.add_node(Node.AGENT, make_agent_node(llm.bind_tools(tools)))
+    builder.add_node(Node.AGENT, make_agent_node(llm.bind_tools(tools), tool_names))
     builder.add_node(Node.TOOLS, make_tools_node(tools))
 
     builder.add_edge(START, Node.AGENT)

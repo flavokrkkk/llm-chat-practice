@@ -31,6 +31,8 @@ STYLE = (
 
 SYSTEM_PROMPT = "\n\n".join([ROLE, CAPABILITIES, DATA_RULES, SECURITY, STYLE])
 
+FALLBACK_REPLY = "Не удалось обработать запрос. Попробуйте переформулировать"
+
 
 def get_system_prompt() -> str:
 
