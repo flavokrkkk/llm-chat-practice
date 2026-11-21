@@ -13,26 +13,27 @@ from app.infrastructure.errors.exceptions import LLMUnavailableError
 logger = logging.getLogger(__name__)
 
 
-def make_agent_node(llm: Runnable[LanguageModelInput, AIMessage]):
+def make_agent_node(
+    llm: Runnable[LanguageModelInput, AIMessage], tool_names: frozenset[str]
+):
 
     async def agent(state: AgentState) -> dict:
         messages = [SystemMessage(get_system_prompt()), *state["messages"]]
 
         try:
             response = await llm.ainvoke(messages)
+        except LLM_PROVIDER_ERRORS as exc:
+            logger.warning("LLM provider error: %r", exc, exc_info=True)
+            raise LLMUnavailableError("LLM unavailable") from exc
 
-            if not response.tool_calls and looks_like_text_tool_call(
-                response.text, tool_names=[]
-            ):
-                logger.warning("Model wrote tool call as text: %s", response.text[:200])
+        if not response.tool_calls and looks_like_text_tool_call(
+            response.text, tool_names
+        ):
+            logger.warning("Model wrote tool call as text: %s", response.text[:200])
             response = AIMessage(
                 content=FALLBACK_REPLY,
                 usage_metadata=response.usage_metadata,
             )
-
-        except LLM_PROVIDER_ERRORS as exc:
-            logger.warning("LLM provider error: %r", exc, exc_info=True)
-            raise LLMUnavailableError("LLM unavailable") from exc
 
         return {"messages": [response]}
 

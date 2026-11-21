@@ -1,13 +1,15 @@
 import uuid
 
 import pytest
-from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langchain_core.tools import ToolException, tool
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.prebuilt import ToolRuntime
 
 from app.agent.graph.pipeline import build_graph
 from app.agent.graph.state import AgentContext
+from app.agent.prompts.system import FALLBACK_REPLY
+from tests.unit.agent.fakes import RecordingFakeModel
 from tests.unit.agent.helpers import model_calling_tool, run_config
 
 
@@ -106,3 +108,44 @@ async def test_unexpected_tool_error_propagates():
             config=run_config("chat-1"),
             context=AgentContext(user_id=user_id),
         )
+
+
+async def test_text_tool_call_is_replaced_with_fallback():
+
+    received: list[uuid.UUID] = []
+
+    @tool
+    async def get_balance(runtime: ToolRuntime[AgentContext]) -> str:
+        """Показать текущий баланс счёта клиента."""
+
+        received.append(runtime.context.user_id)
+
+        return "Баланс счёта: 1 000.00 ₸"
+
+    llm = RecordingFakeModel(
+        messages=iter(
+            [
+                AIMessage('{"name": "get_balance", "arguments": {}}'),
+            ]
+        )
+    )
+
+    graph = build_graph(llm=llm, tools=[get_balance], checkpointer=InMemorySaver())
+
+    user_id = uuid.uuid4()
+
+    result = await graph.ainvoke(
+        {"messages": [HumanMessage("Какой у меня баланс?", id="msg-1")]},
+        config=run_config("chat-1"),
+        context=AgentContext(user_id=user_id),
+    )
+
+    messages = result["messages"]
+
+    assert [message.type for message in messages] == ["human", "ai"]
+    assert received == []
+    assert messages[-1].text == FALLBACK_REPLY
+
+
+async def test_sum_usage_after():
+    pass
