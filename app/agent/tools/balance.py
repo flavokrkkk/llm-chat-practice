@@ -1,4 +1,4 @@
-from langchain_core.tools import ToolException, tool
+from langchain_core.tools import BaseTool, ToolException, tool
 from langgraph.prebuilt import ToolRuntime
 
 from app.agent.graph.state import AgentContext
@@ -6,9 +6,9 @@ from app.agent.tools.deps import ToolDeps
 from app.core.services.user_service import UserService
 
 
-def make_get_balance(deps: ToolDeps):
+def make_get_balance(deps: ToolDeps) -> BaseTool:
     @tool
-    async def get_balance(runtime: ToolRuntime[AgentContext]):
+    async def get_balance(runtime: ToolRuntime[AgentContext]) -> str:
         """Показать текущий баланс счёта клиента."""
 
         user_id = runtime.context.user_id

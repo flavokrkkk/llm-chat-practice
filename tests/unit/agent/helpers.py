@@ -8,14 +8,20 @@ def run_config(thread_id: str) -> RunnableConfig:
     return {"configurable": {"thread_id": thread_id}}
 
 
-def model_calling_tool(tool_name: str, final_answer: str) -> RecordingFakeModel:
+def model_calling_tool(
+    tool_name: str,
+    final_answer: str,
+    args: dict | None = None,
+) -> RecordingFakeModel:
     """Модель, которая сначала вызывает инструмент, потом отвечает текстом."""
     return RecordingFakeModel(
         messages=iter(
             [
                 AIMessage(
                     content="",
-                    tool_calls=[{"name": tool_name, "args": {}, "id": "call_1"}],
+                    tool_calls=[
+                        {"name": tool_name, "args": args or {}, "id": "call_1"}
+                    ],
                 ),
                 AIMessage(final_answer),
             ]

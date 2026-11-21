@@ -70,6 +70,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 session_factory=db.session_factory,
                 cache=app.state.cache,
                 currency=settings.agent.currency,
+                transfer_demo_delay=settings.transfer.demo_delay_seconds,
             )
         )
 

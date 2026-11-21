@@ -12,3 +12,4 @@ class ToolDeps:
     session_factory: async_sessionmaker[AsyncSession]
     cache: RedisCache
     currency: str
+    transfer_demo_delay: float

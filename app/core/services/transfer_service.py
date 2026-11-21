@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.decorator import retry_on_transient_db_error
 from app.core.repositories.transfer_repository import TransferRepository
 from app.core.repositories.user_repository import UserRepository
+from app.core.schemas.base import CursorPaginationResponse
 from app.core.schemas.transfer import TransferSchema
 from app.infrastructure.errors.exceptions import (
     BadRequestError,
@@ -25,6 +27,20 @@ class TransferService:
     def _validate_transfer(self, from_user_id: UUID, to_user_id: UUID) -> None:
         if from_user_id == to_user_id:
             raise BadRequestError("Cannot transfer funds to yourself")
+
+    async def get_transfers_history(
+        self,
+        user_id: UUID,
+        limit: int,
+        cursor_id: UUID | None = None,
+        cursor_created_at: datetime | None = None,
+    ) -> CursorPaginationResponse:
+        return await self.transfer_repository.get_transfer_history_keyset(
+            user_id=user_id,
+            limit=limit,
+            cursor_id=cursor_id,
+            cursor_created_at=cursor_created_at,
+        )
 
     async def _demo_pause(self) -> None:
         if self._demo_delay > 0:
