@@ -29,6 +29,9 @@ class UserService:
     async def get_user_by_email(self, email: str) -> UserSchema:
         return await self.user_repository.get_user_by_email(email)
 
+    async def find_user_by_email(self, email: str) -> UserSchema | None:
+        return await self.user_repository.find_user_by_email(email)
+
     async def get_user_stats(self) -> list[TopUserStatsSchema]:
         cached_top_users = await self.cache.get(CACHE_USER_STATS_KEY)
 

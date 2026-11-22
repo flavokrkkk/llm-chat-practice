@@ -9,12 +9,14 @@ from .base import BaseSchema
 
 class UserCreate(BaseModel):
     email: EmailStr
+    full_name: str
     balance: Decimal = Field(default=Decimal("0.00"), ge=0, decimal_places=2)
 
 
 class UserSchema(BaseSchema):
     id: UUID
     email: EmailStr
+    full_name: str
     balance: Decimal
     created_at: datetime
     is_active: bool
@@ -24,6 +26,7 @@ class UserSchemaWithCredentials(BaseSchema):
     id: UUID
     email: EmailStr
     balance: Decimal
+    full_name: str
     created_at: datetime
     password_hash: str
     is_active: bool
@@ -32,6 +35,7 @@ class UserSchemaWithCredentials(BaseSchema):
 class TopUserStatsSchema(BaseSchema):
     user_id: UUID
     email: EmailStr
+    full_name: str
     balance: Decimal
     created_at: datetime
     messages_count: int = Field(

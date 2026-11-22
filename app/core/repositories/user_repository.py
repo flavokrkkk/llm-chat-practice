@@ -79,6 +79,16 @@ class UserRepository(SqlAlchemyRepository):
 
         return UserSchema.model_validate(result)
 
+    async def find_user_by_email(self, email: str) -> None | UserSchema:
+        query = select(User).where(func.lower(User.email) == email.lower())
+
+        result = (await self.session.execute(query)).scalar_one_or_none()
+
+        if result is None:
+            return None
+
+        return UserSchema.model_validate(result)
+
     async def get_user_stats(self) -> list[TopUserStatsSchema]:
         messages_count = func.count(Message.id).label("messages_count")
 
