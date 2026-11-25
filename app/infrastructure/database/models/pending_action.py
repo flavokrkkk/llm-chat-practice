@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, text
+from sqlalchemy import DateTime, ForeignKey, Index, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,6 +32,7 @@ class PendingAction(UUIDPkMixin, CreatedAtMixin, Base):
             "expires_at",
             postgresql_where=text("status = 'pending'"),
         ),
+        UniqueConstraint("chat_id", "tool_call_id"),
     )
 
     chat_id: Mapped[UUID] = mapped_column(
@@ -40,7 +41,7 @@ class PendingAction(UUIDPkMixin, CreatedAtMixin, Base):
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
-    tool_call_id: Mapped[str] = mapped_column(String(255), unique=True)
+    tool_call_id: Mapped[str] = mapped_column(String(255))
     kind: Mapped[PendingActionKind] = mapped_column(
         str_enum(PendingActionKind, name="kind", length=32)
     )

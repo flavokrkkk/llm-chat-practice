@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import NewType
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from .base import BaseId, BaseSchema
 
@@ -23,3 +23,10 @@ class TransferSchema(BaseSchema):
     to_user_id: UUID
     amount: Decimal
     created_at: datetime
+
+
+class TransferPayload(BaseSchema):
+    recipient_id: UUID
+    recipient_email: EmailStr
+    recipient_masked_name: str
+    amount: Decimal

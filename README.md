@@ -23,3 +23,5 @@ uv run pytest tests/unit/agent -s -k user_id_from_context - с логами
 <!-- Миграции -->
 uv run alembic revision --autogenerate -m "add reply_to_id to messages"
 uv run alembic upgrade head
+
+uv run alembic revision --autogenerate -m "add unique_constraint to pending_action"
